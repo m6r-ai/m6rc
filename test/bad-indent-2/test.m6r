@@ -1,0 +1,7 @@
+Action:
+    Test indentation processing
+
+    Context:
+        As a tester,
+       I would like my tests to find problems,
+        so my code works better

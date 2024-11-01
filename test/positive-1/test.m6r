@@ -1,0 +1,48 @@
+Action:
+    I have a single page application website and want to pre-render all the pages so I can allow the website to be crawled by spiders that cannot render JavaScript.
+
+    As a website developer, I want to pre-render all the pages of my website, so I can allow the website to be
+    crawled by spiders that cannot render JavaScript.
+
+    # This is the start of the context region!
+    Context: Environment and dependency setup
+        Context:
+            The tool must be compatible with Node.js version 14.x or later and headless Google Chrome (current version).
+
+        Context:
+            Use the latest available stable version of puppeteer for rendering.
+
+        Context:
+            Use the latest available stable version of yargs for command line options.
+
+        Context:
+            Use the latest available stable version of yargs for command line options.
+
+        Context:
+            Use the latest available stable version of axios to handle the HTTP requests.
+
+        Context:
+            Use the latest available stable version of fast-xml-parser to handle the XML parsing.
+
+        Context:
+            # This comments is at the start of a context element.
+
+            Any package dependencies that you might need must be explicitly stated in these requirements.  If you need to use a dependency that is not listed here then ask for approval or use a different approach.
+
+    Context: Tool invocation
+        Context:
+            The tool should be invoked as a script with Node.js using ES6 modules.
+
+        Context:
+            Ensure that the tool can be run from the command line with appropriate parameters.
+
+        Context:
+            The tool does not need a configuration file.
+
+    Context: Sitemap handling
+        Context:
+            The tool will scan a sitemap.xml file that will provide a list of URLs to be pre-rendered.
+
+        Context:
+            The sitemap will be defined by either a file or a URL.  Either option can be provided but not both, and one option must be provided by the user.
+

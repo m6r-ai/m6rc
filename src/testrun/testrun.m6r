@@ -1,0 +1,186 @@
+# Copyright 2024 M6R Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+Action: Test runner
+    Create a test runner for the metaphor compiler
+
+    Context: Core functionality
+        As an engineer working on the metaphor compiler, I want to run automated tests to check the compiler is working
+        correctly, so my users have confidence in the output from the compiler.
+
+        Context: Run tests
+            The test runner will run a series of tests against the metaphor compiler.
+
+        Context: Positive and negative tests
+            The test runner can execute positive and negative tests.  Positive tests are expected to generate good output,
+            while negative tests are expected to produce errors.
+
+        Context: Process isolation
+            Each test will be started in a new process.  The test runner will track the exit status of each test and use it
+            to determine if tests have passed or failed.
+
+        Context: Console message
+            When a test starts, display a message to the console with the test command being executed.
+
+            Given the test runner starts a test,
+            When the test starts,
+            Then print a console message: "Start <test command>", where <test command> is the command that will be executed.
+
+        Context: Capture test outputs
+            The test runner must capture the console output of each test.
+
+        Context: Test command status processing
+            A test process must exit with a zero status for a passing positive test, or a non-zero status for a passing
+            negative test.
+
+            If the test command exits with a zero status for a positive test, or a non-zero status for a negative test, then
+            check if there is an expected results file.  If there is no expected results file then ignore any console output.  If
+            a test has an expected result then the console output from the test must be compared with output in the
+            expected result file.  If these do not match then the test has failed.  If they do match then the test has passed.
+            The compare operation is a simple character by character string compare.
+
+        Context: Test result recording
+            When a test passes or fails, the details will be recorded and a summary displayed once all tests have been processed.
+
+        Context:
+            Some tests may fail because they take too long.  If this happens, then the test should be terminated
+            by sending a KILL signal to the process that has taken too long.  By default the timeout is set at 5000 ms.
+            Any test that times out will be recorded as a fail.
+
+        Context:
+            When a test completes, display a message to the console indicating if it passed or failed.
+
+            Given a test completes, when the test passes, then print a console message:
+            "PASS: <test command>", where <test command> is the test command that was executed.  Use green text for the
+            "PASS:" portion of the message.
+
+            Given a test completes, when the test fails, then print a console message:
+            "FAIL: <test command>", where <test command> is the test command that was executed.  Use red text for the
+            "FAIL:" portion of the message.
+
+    Context: Performance
+        As an engineer working on the metaphor compiler, I would like my tests to execute as quickly as possible, so
+        I wish them to execute in parallel.
+
+        Context:
+            The test runner must be able to execute tests in parallel, up to some maximum limit.  The limit will default to
+            the number of CPU cores on the system running the tests.  Tests have no dependencies on each other and can thus
+            be run in any order.
+
+    Context: Test configuration
+        As an engineer working on the metaphor compiler, I would like my tests to be configured via a single test
+        configuration file, so I can easily configure tests and test settings.
+
+        Context:
+            The set of tests wil be defined by a JSON test configuration file.
+
+        Context:
+            For each test there will be a series of JSON key/value pairs.
+
+        Context:
+            Each test has a set of mandatory or optional key/value pairs
+
+            Context:
+                Mandatory key/value: "command".  This is the test command that will be executed to run the test.
+
+            Context:
+                Mandatory key/value: "type".  Indicates if this is a positive or negative test.  Values are either
+                "positive" or "negative".
+
+            Context:
+                Optional key/value: "expected".  If this key/value pair exists, it specifies a file that contains expected
+                results from the test.
+
+            Context:
+                Optional key/value: "timeout".  If this key/value pair exists, it sets the timeout, in ms, for this test,
+                and overrides the default timeout.
+
+            Context:
+                The following is an example of two tests configured in a JSON test configuration file:
+
+                ```json
+                [
+                    {
+                        "command": "build/m6rc test/test1.m6r",
+                        "type": "positive",
+                        "timeout": 1000
+                    },
+                    {
+                        "command": "build/m6rc test/test2.m6r",
+                        "type": "negative"
+                    }
+                ]
+                ```
+
+    Context: Tool invocation
+        As an engineer working on the metaphor compiler, I would like my tests be be started by executing the test runner
+        from the command line, so I can quickly run and tests and configure test behaviour.
+
+        Context:
+            The test runner can be run from the command line with appropriate command line parameters.
+
+        Context:
+            The default command line parameter is the name of the file with the test configurations.
+
+        Context:
+            The number of parallel tests that can be run can be specified with the "--parallel-tests" command line parameter.
+
+        Context:
+            If the user provides invalid parameters (any that are not specified in this requirement), or passes the "-h"
+            or "--help" command line parameters, then the test runner should output the usage options for the test runner
+            to the console and exit with an error status.
+
+        Context:
+            When the test runner completes it will exit with a status code of 0 if all tests have passed, or with a status code
+            of 1 if any of the tests failed.
+
+    Context: Robust implementation
+        As an engineer working on the metaphor compiler, I want the implementation to be robust and not attempt to generate
+        ouputs that might be incorrect, so I want the code to check for potential runtime problems.
+
+        Context:
+            All filesystem operations should be checked to see if they have completed successfully.  If any fail then these
+            should be handled as failures against the test that was being run.
+
+        Context:
+            The config file must be checked to ensure there are no keys that are not defined in this requirement.  If any
+            are found then the test runner should emit a console error with the line number and exit with an error status.
+
+    Context: Coding standards
+        As an engineer working on the metaphor compiler, I want my test runner to be easy to use and understand, so I can
+        maintain and enhance it over time.
+
+        Context:
+            The test runner will be built with the latest version of python 3.
+
+        Context:
+            Code should be indented by 4 spaces.
+
+        Context:
+            Use docstrings to describe all modules, classes, and functions.
+
+        Context:
+            Use additional comments to describe any complex logic.
+
+        Context:
+            The import list in any module should follow PEP 8 guidelines.
+
+        Context:
+            Do not use elif or else statements if the preceding statement returns or calls sys.exit
+
+    Context: Previous version
+        An implementation of the test runner is provided here.  It may not accurately reflect the
+        requirements stated previously, in which case it will need to be modified to support them.
+
+        Embed: src/testrun/testrun.py

@@ -1,0 +1,26 @@
+[
+    {
+        "command": "python3 src/m6rc/m6rc.py test/bad-include-1/test.m6r",
+        "type": "negative"
+    },
+    {
+        "command": "python3 src/m6rc/m6rc.py test/bad-include-2/test.m6r",
+        "type": "negative"
+    },
+    {
+        "command": "python3 src/m6rc/m6rc.py test/bad-indent-1/test.m6r",
+        "type": "negative"
+    },
+    {
+        "command": "python3 src/m6rc/m6rc.py test/bad-indent-2/test.m6r",
+        "type": "negative"
+    },
+    {
+        "command": "python3 src/m6rc/m6rc.py test/include-1/test.m6r",
+        "type": "positive"
+    },
+    {
+        "command": "python3 src/m6rc/m6rc.py test/positive-1/test.m6r",
+        "type": "positive"
+    }
+]

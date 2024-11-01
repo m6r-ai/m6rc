@@ -1,0 +1,6 @@
+# Ignore temp files
+*~
+*.swp
+
+# Ignore python cache files
+**/__pycache__

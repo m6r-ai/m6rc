@@ -1,0 +1,24 @@
+Context:
+    File management
+
+    Context:
+        Rendered pages should be saved in a specified output directory.
+    Context:
+        The output directory is defined by the non-optional --output command line parameter.
+    Context:
+        For each page, the directory structure should match the URL path, but should not include the hostname or any port number.
+    Context:
+        If the page does not have an explicit ".html" or ".htm" name then assume it is a directory and create a file "index.html" as the file name within that output directory.
+
+        Given the tool is scanning URLs for the website https://davehudson.io, when the tool has found a URL
+        https://davehudson.io/blog/post, then The output file should be saved
+        <output-directory>/blog/post/index.html, where <output-directory> is the path specified as the output directory.
+
+    Context:
+        If the output directory or any subdirectories do not exist then they should be created.  If creating the directories fails then emit a failure message to the console and exit with an error status.
+    Context:
+        Before attempting any to invoke puppeteer for a given URL, any previous output file that matches what will be the new output file must be deleted.
+    Context:
+        The tool must not delete any file or directory that will not be written as an output file.
+    Context:
+        If any file or directory operations fail then log a message to the console and exit with an error status.

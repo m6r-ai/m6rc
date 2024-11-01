@@ -1,0 +1,23 @@
+Action:
+    I have a single page application website and want to pre-render all the pages so I can allow the website to be crawled by spiders that cannot render JavaScript.
+
+    Context: Usage Information
+
+        Context:
+            If invoked with invalid parameters, display correct usage information.
+        Context:
+            Include a -h parameter to display a help message with all valid parameters and their usage.
+
+        Include: test/bad-include-2/include.m6r
+
+        Context: Code quality
+
+            Context:
+                Use JSDoc annotations for all functions.
+            Context:
+                Use 4 spaces for indentation in the source code.
+            Context:
+                Where any functions may throw errors, include try/catch blocks to handle those error conditions.
+            Context:
+                For code style, do not use an "else" if the previous block in an if statement ends with a "return" statement.
+
