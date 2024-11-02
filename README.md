@@ -48,8 +48,9 @@ indented by exactly 4 spaces.
 ## Using the output
 
 When you have generated an output file, copy its contents to the LLM prompt.  This means the same prompt can be reused
-multiple times, in case adjustments are required, or if the LLM does something unexpected.  By using temporary chats with the
-LLM this makes things more repeatable.  Future versions will offer more options to automate the use of the output.
+multiple times, in case adjustments are required, or if the LLM does something unexpected.  Using clean, new, temporary
+chats with the LLM each time you want to upload an LCP makes things more repeatable as the LLM won't be using any
+context from earlier conversations.  Future versions will offer more options to automate the use of the output.
 
 ## Interacting with the LLM after prompting
 
