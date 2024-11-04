@@ -85,35 +85,39 @@ def simplify_text(node):
         del node.child_nodes[i + 1]
 
 
-def recurse(node, section, out):
+def recurse(node, depth, out):
     """
     Recursively traverse the AST and output formatted sections.
 
     Args:
         node (ASTNode): The current AST node being processed.
-        section (str): The section number (e.g., "1", "1.1").
+        depth (integer): The current tree depth.
         out (file): The output stream to write to.
     """
+    indent = " " * (depth * 4)
+    keyword = "";
+
     if node.token_type == TokenType.TEXT:
-        out.write(node.value + '\n\n')
+        out.write(f"{indent}{node.value}\n")
         return
+
+    if node.token_type == TokenType.ACTION:
+        keyword = "Action:"
+    elif node.token_type == TokenType.CONTEXT:
+        keyword = "Context:"
 
     if node.token_type in (TokenType.ACTION, TokenType.CONTEXT, TokenType.ROLE):
         if node.child_nodes:
             child = node.child_nodes[0]
             if child.token_type == TokenType.KEYWORD_TEXT:
-                out.write(f"{section} {child.value}\n\n")
+                out.write(f"{indent}{keyword} {child.value}\n")
             else:
-                out.write(f"{section}\n\n")
+                out.write(f"{indent}{keyword}\n")
         else:
-            out.write(f"{section}\n\n")
+            out.write(f"{indent}{keyword}\n")
 
-    index = 0
     for child in node.child_nodes:
-        if child.token_type in (TokenType.CONTEXT, TokenType.ROLE):
-            index += 1
-
-        recurse(child, f"{section}.{index}", out)
+        recurse(child, depth + 1, out)
 
 
 def main():
@@ -121,19 +125,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_file", help="Input file to parse")
     parser.add_argument("-o", "--outputFile", help="Output file")
-    parser.add_argument("-d", "--debug", action="store_true", help="Enable debug mode")
 
     args = parser.parse_args()
 
     output_file = args.outputFile
-    debug = args.debug
     input_file = args.input_file
 
-    if debug:
-        print("Debug mode is ON")
-
     if not Path(input_file).exists():
-        print(f"Error: File {input_file} not found")
+        print(f"Error: File {input_file} not found", file=sys.stderr)
         return 1
 
     output_stream = sys.stdout
@@ -141,20 +140,39 @@ def main():
         try:
             output_stream = open(output_file, 'w', encoding='utf-8')
         except OSError as e:
-            print(f"Error: Could not open output file {output_file}: {e}")
+            print(f"Error: Could not open output file {output_file}: {e}", file=sys.stderr)
             return 1
 
     parser = Parser()
     if not parser.parse(input_file):
         for error in parser.get_syntax_errors():
-            print(f"----------------\n{error}")
+            print(f"----------------\n{error}", file=sys.stderr)
 
-        print("----------------\n")
+        print("----------------\n", file=sys.stderr)
         return -1
 
+    # Provide a default summary of Metaphor.
+    output_stream.write("The following is written in a language called Metaphor.\n\n")
+    output_stream.write("Metaphor has the structure of a document tree with branches and leaves being \n")
+    output_stream.write("prefixed by the keywords \"Context:\" or \"Action:\".\n\n")
+    output_stream.write("These have an optional section name that will immediately follow them on the same line.  \n")
+    output_stream.write("If this is missing then the section name is not defined.\n\n")
+    output_stream.write("After a keyword line the text may be indented to include an optional block of descriptive \n")
+    output_stream.write("text that explains the purpose of the block.  A block may also include one or more optional \n")
+    output_stream.write("child blocks inside them and that further clarify their parent block.\n\n")
+    output_stream.write("The indentation of the blocks indicates where in the tree the pieces appear.  For example a \n")
+    output_stream.write("\"Context:\" indented by 8 spaces is a child of the context above it that is indented by 4 \n")
+    output_stream.write("spaces.  One indented 12 spaces would be a child of the block above it that is indented by \n")
+    output_stream.write("8 spaces.\n\n")
+    output_stream.write("Please review all of the \"Context:\" blocks to understand what is required and then \n")
+    output_stream.write("process all of the items included in the \"Action:\" section.\n\n")
+    output_stream.write("When you process the actions please carefully ensure you do all of them accurately.  These \n")
+    output_stream.write("need to fulfil all the details described in the \"Context:\".  Ensure you complete all the \n")
+    output_stream.write("elements and do not include any placeholders.\n\n")
+
     syntax_tree = parser.get_syntax_tree()
-    simplify_text(syntax_tree)
-    recurse(syntax_tree, "1", output_stream)
+    # simplify_text(syntax_tree)
+    recurse(syntax_tree, 0, output_stream)
 
     if output_file:
         output_stream.close()

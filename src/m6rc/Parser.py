@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import sys
 
 from Token import Token, TokenType
 from EmbedLexer import EmbedLexer
@@ -62,10 +63,10 @@ class Parser:
 
             return not self.parse_errors
         except FileNotFoundError as e:
-            print(f"Error: {e}")
+            print(f"Error: {e}", file=sys.stderr)
             return False
         except FileAlreadyUsedError as e:
-            print(f"Error: {e}")
+            print(f"Error: {e}", file=sys.stderr)
             return False
 
     def get_next_token(self):

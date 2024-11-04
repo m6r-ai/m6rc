@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 from pathlib import Path
 
 from Token import Token, TokenType
@@ -37,16 +38,16 @@ class Lexer:
             with open(filename, 'r', encoding='utf-8') as file:
                 return file.read()
         except FileNotFoundError:
-            print(f"File not found: {filename}")
+            print(f"File not found: {filename}", file=sys.stderr)
             return
         except PermissionError:
-            print(f"You do not have permission to access: {filename}")
+            print(f"You do not have permission to access: {filename}", file=sys.stderr)
             return
         except IsADirectoryError:
-            print(f"Is a directory: {filename}")
+            print(f"Is a directory: {filename}", file=sys.stderr)
             return
         except OSError as e:
-            print(f"OS error: {e}")
+            print(f"OS error: {e}", file=sys.stderr)
             return
 
     def get_next_token(self):
