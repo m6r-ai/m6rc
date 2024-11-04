@@ -20,71 +20,6 @@ from Token import TokenType
 from Parser import Parser
 
 
-def simplify_text(node):
-    """
-    Simplify the text content in the AST by merging adjacent text nodes.
-
-    Args:
-        node (ASTNode): The current node in the AST being simplified.
-    """
-    i = 0
-    in_formatted_section = False
-
-    while i < len(node.child_nodes):
-        child = node.child_nodes[i]
-
-        if child.token_type != TokenType.TEXT:
-            simplify_text(child)
-            i += 1
-            continue
-
-        # Preserve blank lines (empty text nodes)
-        if not in_formatted_section and len(child.value) == 0:
-            del node.child_nodes[i]
-            continue
-
-        if i == len(node.child_nodes) - 1:
-            i += 1
-            continue
-
-        if child.value.startswith("```"):
-            in_formatted_section = True
-
-        # If our sibling isn't a text node we can't merge it.
-        sibling = node.child_nodes[i + 1]
-        if sibling.token_type != TokenType.TEXT:
-            in_formatted_section = False
-            i += 1
-            continue
-
-        # Is our sibling a formatted code delimeter?
-        if sibling.value.startswith("```"):
-            if in_formatted_section:
-                child.value += "\n" + sibling.value
-                del node.child_nodes[i + 1]
-                i += 2
-                in_formatted_section = False
-                continue
-
-            i += 1
-            continue
-
-        # If we're in a formatted text section then apply a newline and merge these two elements.
-        if in_formatted_section:
-            child.value += "\n" + sibling.value
-            del node.child_nodes[i + 1]
-            continue
-
-        # If our next text is an empty line then this indicates the end of a paragraph.
-        if len(sibling.value) == 0:
-            del node.child_nodes[i + 1]
-            i += 1
-            continue
-
-        child.value += "\n" + sibling.value
-        del node.child_nodes[i + 1]
-
-
 def recurse(node, depth, out):
     """
     Recursively traverse the AST and output formatted sections.
@@ -171,7 +106,6 @@ def main():
     output_stream.write("elements and do not include any placeholders.\n\n")
 
     syntax_tree = parser.get_syntax_tree()
-    # simplify_text(syntax_tree)
     recurse(syntax_tree, 0, output_stream)
 
     if output_file:
