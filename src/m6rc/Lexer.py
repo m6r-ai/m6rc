@@ -36,10 +36,12 @@ class Lexer:
         if Path(filename).exists():
             return filename
 
-        for path in self.search_paths:
-            try_name = os.path.join(path, filename)
-            if Path(try_name).exists():
-                return try_name
+        # If we don't have an absolute path then we can try search paths.
+        if not os.path.isabs(filename):
+            for path in self.search_paths:
+                try_name = os.path.join(path, filename)
+                if Path(try_name).exists():
+                    return try_name
 
         raise FileNotFoundError(f"File not found: {filename}")
 
