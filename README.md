@@ -34,16 +34,31 @@ Metaphor (m6r) files follow a very simple document-like structure.  It has only 
 - `Action:` - defines the top-level action objective being conveyed to the LLM.  There is only one `Action:` keyword
   in any given Metaphor input.
 - `Context:` - a hierarchical description of the context of the work we want the LLM to do and supporting information.
-  `Context:` elements may nest but must only exist within the context of a `Action:`.
 - `Embed:` - embeds an external file into the prompt, also indicating the language involved to the LLM.
 - `Include:` - includes another Metaphor file into the current one, as if that one was directly part of the file being
   procesed, but auto-indented to the current indentation level.
-- `Role:` - defines a role to be played by the LLM.  Note: this is not currently used!
+- `Role:` - defines a role to be played by the LLM (optional).
+
+A Metaphor description requires an `Action:` block and a `Context:` block.  `Context:` blocks are nested to provide
+detail.  Here is a very simple example:
+
+```
+Context: Top-level context
+    Some notes about the top-level context
+
+    Context: More context to support the top-level context
+        Description of the extra context
+
+Action:
+    Some instructions..
+```
 
 ### Indentation
 
 To avoid arguments over indentation, Metaphor supports only one valid indentation strategy.  All nested items must be
 indented by exactly 4 spaces.
+
+Tab characters may be used inside embedded files, but must not be used to indent elements inside Metaphor files.
 
 ## Using the output
 
@@ -85,14 +100,14 @@ Where `<file>` is the path to the input file containing Metaphor language code.
 ### Options
 
 - **`-h, --help`**: Display help and usage information.
-  
 - **`-o, --outputFile <file>`**: Specify the output file where the compiler should write its results.  If this
   option is not provided, the output is printed to the console.
+- **`-I, --include <path>`**: Specify a search path to be used by `Include:` directives.
 
 ## Steps to compile a file
 
 1. **Prepare the Input File**: Ensure your file is written in Metaphor language and adheres to its syntax rules.
-   
+
 2. **Compile the File**: Use the following command to compile the input file:
 
    ```bash
@@ -134,6 +149,8 @@ python3 <path-to-m6rc.py>/m6rc --help
 Most Metaphor examples can be found in external repos, but an example in this repo can be found in
 `src/testrun/testrun.m6r`.
 
+A list of examples can be found at: [m6r.ai/Metaphor](https://m6r.ai/Metaphor).
+
 This file was used to generate the test runner that is used to check the m6rc compiler correctly handles
 input files.
 
@@ -148,6 +165,7 @@ Errors typically include:
 - File name
 
 For example:
+
 ```
 Expected 'Action' keyword: line 10, column 5, file example.m6r
 ```
@@ -157,4 +175,3 @@ Expected 'Action' keyword: line 10, column 5, file example.m6r
 ### Why `m6r`?
 
 m6r is short for Metaphor (m, 6 letters, r).  It's quicker and easier to type!
-
