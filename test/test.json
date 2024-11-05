@@ -1,27 +1,43 @@
 [
     {
-        "command": "python3 src/m6rc/m6rc.py test/bad-include-1/test.m6r",
+        "command": "python3 src/m6rc/m6rc.py test/indent-1-bad/test.m6r",
         "type": "negative"
     },
     {
-        "command": "python3 src/m6rc/m6rc.py test/bad-include-2/test.m6r",
+        "command": "python3 src/m6rc/m6rc.py test/indent-2-bad/test.m6r",
         "type": "negative"
     },
     {
-        "command": "python3 src/m6rc/m6rc.py test/bad-indent-1/test.m6r",
-        "type": "negative"
-    },
-    {
-        "command": "python3 src/m6rc/m6rc.py test/bad-indent-2/test.m6r",
-        "type": "negative"
+        "command": "python3 src/m6rc/m6rc.py test/keyword-case/test.m6r",
+        "type": "positive"
     },
     {
         "command": "python3 src/m6rc/m6rc.py test/include-1/test.m6r",
         "type": "positive"
     },
     {
-        "command": "python3 src/m6rc/m6rc.py test/keyword-case/test.m6r",
+        "command": "python3 src/m6rc/m6rc.py test/include-2-bad/test.m6r",
+        "type": "negative"
+    },
+    {
+        "command": "python3 src/m6rc/m6rc.py test/include-3-bad/test.m6r",
+        "type": "negative"
+    },
+    {
+        "command": "python3 src/m6rc/m6rc.py test/embed-1/test.m6r",
         "type": "positive"
+    },
+    {
+        "command": "python3 src/m6rc/m6rc.py test/embed-2/test.m6r",
+        "type": "positive"
+    },
+    {
+        "command": "python3 src/m6rc/m6rc.py test/embed-3-bad/test.m6r",
+        "type": "negative"
+    },
+    {
+        "command": "python3 src/m6rc/m6rc.py test/embed-4-bad/test.m6r",
+        "type": "negative"
     },
     {
         "command": "python3 src/m6rc/m6rc.py test/positive-1/test.m6r",

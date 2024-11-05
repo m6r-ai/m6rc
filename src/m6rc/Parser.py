@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import glob
 import os
 import sys
 
@@ -123,8 +124,10 @@ class Parser:
             action_node.add_child(self.parse_keyword_text(init_token))
             indent_token = self.get_next_token()
             if indent_token.type != TokenType.INDENT:
-                self.raise_syntax_error(token, "Expected indent after keyword description " \
-                                        "for 'Action' block")
+                self.raise_syntax_error(
+                    token,
+                    "Expected indent after keyword description for 'Action' block"
+                )
         elif init_token.type != TokenType.INDENT:
             self.raise_syntax_error(token, "Expected description or indent for 'Action' block")
 
@@ -141,8 +144,10 @@ class Parser:
             elif token.type == TokenType.OUTDENT or token.type == TokenType.END_OF_FILE:
                 return action_node
             else:
-                self.raise_syntax_error(token, f"Unexpected token: {token.value} in " \
-                                        "'Action' block")
+                self.raise_syntax_error(
+                    token,
+                    f"Unexpected token: {token.value} in 'Action' block"
+                )
 
     def parse_keyword_text(self, token):
         """Parse keyword text."""
@@ -195,8 +200,10 @@ class Parser:
             role_node.add_child(self.parse_keyword_text(init_token))
             indent_token = self.get_next_token()
             if indent_token.type != TokenType.INDENT:
-                self.raise_syntax_error(token, "Expected indent after keyword description for " \
-                                        "'Role' block")
+                self.raise_syntax_error(
+                    token,
+                    "Expected indent after keyword description for 'Role' block"
+                )
         elif init_token.type != TokenType.INDENT:
             self.raise_syntax_error(token, "Expected description or indent for 'Role' block")
 
@@ -207,8 +214,10 @@ class Parser:
             elif token.type == TokenType.OUTDENT or token.type == TokenType.END_OF_FILE:
                 return role_node
             else:
-                self.raise_syntax_error(token, f"Unexpected token: {token.value} in " \
-                                        "'Role' block")
+                self.raise_syntax_error(
+                    token,
+                    f"Unexpected token: {token.value} in 'Role' block"
+                )
 
     def parse_include(self):
         """Parse an Include block and load the included file."""
@@ -225,9 +234,18 @@ class Parser:
         """Parse an Embed block and load the embedded file."""
         token_next = self.get_next_token()
         if token_next.type != TokenType.KEYWORD_TEXT:
-            self.raise_syntax_error(token_next, "Expected file name for 'Embed'")
+            self.raise_syntax_error(token_next, "Expected file name or wildcard match for 'Embed'")
             return
 
-        filename = token_next.value
-        self.check_file_not_loaded(filename)
-        self.lexers.append(EmbedLexer(filename))
+        recurse = False
+        match = token_next.value
+        if "**/" in match:
+            recurse = True
+
+        files = glob.glob(match, recursive=recurse)
+        if not files:
+            self.raise_syntax_error(token_next, f"{match} does not match any files for 'Embed'")
+            return
+
+        for file in files:
+            self.lexers.append(EmbedLexer(file))

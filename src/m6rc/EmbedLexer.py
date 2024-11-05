@@ -16,6 +16,10 @@ from Token import Token, TokenType
 from Lexer import Lexer
 
 class EmbedLexer(Lexer):
+    """
+    Lexer for handling embedded content like code blocks.
+    """
+
     file_exts = {
         "bash": "bash",
         "c": "c",
@@ -61,11 +65,8 @@ class EmbedLexer(Lexer):
         "yml": "yaml"
     }
 
-
-    """
-    Get a language name from a filename extension.
-    """
     def _get_language_from_file_extension(self, filename):
+        """Get a language name from a filename extension."""
         extension = ""
         if '.' in filename:
             extension = (filename.rsplit('.', 1)[-1]).lower()
@@ -76,10 +77,6 @@ class EmbedLexer(Lexer):
 
         return language
 
-
-    """
-    Lexer for handling embedded content like code blocks.
-    """
     def _tokenize(self):
         """Tokenizes the input file and handles embedded content."""
         self.tokens.append(Token(TokenType.TEXT, f"File: {self.filename}", "", self.filename, 0, 1))

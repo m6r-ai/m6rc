@@ -13,7 +13,7 @@ Context: File management
         https://davehudson.io/blog/post then the output file should be saved <output-directory>/blog/post/index.html,
         where <output-directory> is the path specified as the output directory.
 
-    Include: test/bad-include-2/test.m6r
+    Include: test/include-2-bad/test.m6r
 
 Context:
     If the output directory or any subdirectories do not exist then they should be created.  If creating the directories fails then emit a failure message to the console and exit with an error status.

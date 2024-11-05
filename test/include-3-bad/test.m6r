@@ -9,8 +9,8 @@ Action:
         Context:
             Include a -h parameter to display a help message with all valid parameters and their usage.
 
-        Include: test/bad-include-1/include.m6r
-        Include: test/bad-include-1/include.m6r
+        Include: test/include-3-bad/include.m6r
+        Include: test/include-3-bad/include.m6r
 
         Context:
             Code quality
