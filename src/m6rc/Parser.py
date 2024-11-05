@@ -38,8 +38,9 @@ class Parser:
         self.parse_errors = []
         self.lexers = []
         self.previously_seen_files = set()
+        self.search_paths = []
 
-    def parse(self, filename):
+    def parse(self, filename, search_paths):
         """
         Parse a file and construct the AST.
 
@@ -49,9 +50,11 @@ class Parser:
         Returns:
             bool: True if parsing was successful, False otherwise.
         """
+        self.search_paths = search_paths
+
         try:
             self.check_file_not_loaded(filename)
-            self.lexers.append(MetaphorLexer(filename))
+            self.lexers.append(MetaphorLexer(filename, search_paths))
 
             while True:
                 token = self.get_next_token()
@@ -235,7 +238,7 @@ class Parser:
 
         filename = token_next.value
         self.check_file_not_loaded(filename)
-        self.lexers.append(MetaphorLexer(filename))
+        self.lexers.append(MetaphorLexer(filename, self.search_paths))
 
     def parse_embed(self):
         """Parse an Embed block and load the embedded file."""
@@ -255,4 +258,4 @@ class Parser:
             return
 
         for file in files:
-            self.lexers.append(EmbedLexer(file))
+            self.lexers.append(EmbedLexer(file, []))

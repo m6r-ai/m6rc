@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import sys
 import argparse
 from pathlib import Path
@@ -62,6 +63,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_file", help="Input file to parse")
     parser.add_argument("-o", "--outputFile", help="Output file")
+    parser.add_argument("-I", "--include", action="append", help="Specify an include path")
 
     args = parser.parse_args()
 
@@ -72,6 +74,15 @@ def main():
         print(f"Error: File {input_file} not found", file=sys.stderr)
         return 1
 
+    search_paths = []
+    if args.include:
+        for path in args.include:
+            if not os.path.isdir(path):
+                print(f"Error: {path}: is not a valid directory", file=sys.stderr)
+                return 1
+
+            search_paths.append(path)
+
     output_stream = sys.stdout
     if output_file:
         try:
@@ -81,7 +92,7 @@ def main():
             return 1
 
     parser = Parser()
-    if not parser.parse(input_file):
+    if not parser.parse(input_file, search_paths):
         for error in parser.get_syntax_errors():
             print(f"----------------\n{error}", file=sys.stderr)
 

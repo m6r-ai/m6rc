@@ -20,7 +20,7 @@ class MetaphorLexer(Lexer):
     Lexer for handling the metaphor language with its specific syntax, including keywords like
     Action, Context, Role, and proper indentation handling.
     """
-    def __init__(self, filename, indent_spaces=4):
+    def __init__(self, filename, search_paths, indent_spaces=4):
         """
         Initializes the MetaphorLexer.
 
@@ -39,7 +39,7 @@ class MetaphorLexer(Lexer):
         self.in_text_block = False
         self.indent_column = 1
         self.indent_spaces = indent_spaces
-        super().__init__(filename)
+        super().__init__(filename, search_paths)
 
     def _tokenize(self):
         """Tokenizes the input file into appropriate tokens."""

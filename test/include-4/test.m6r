@@ -1,0 +1,57 @@
+Action:
+    I have a single page application website and want to pre-render all the pages so I can allow the website to be crawled by spiders that cannot render JavaScript.
+
+    As a website developer, I want to pre-render all the pages of my website, so I can allow the website to be
+    crawled by spiders that cannot render JavaScript.
+
+Context:
+    Context: Environment and dependency setup
+
+        Context:
+            The tool must be compatible with Node.js version 14.x or later and headless Google Chrome (current version).
+
+        Context:
+            Use the latest available stable version of puppeteer for rendering.
+
+        Context:
+            Use the latest available stable version of yargs for command line options.
+
+        Context:
+            Use the latest available stable version of yargs for command line options.
+
+        Context:
+            Use the latest available stable version of axios to handle the HTTP requests.
+
+        Context:
+            Use the latest available stable version of fast-xml-parser to handle the XML parsing.
+
+        Context:
+            Any package dependencies that you might need must be explicitly stated in these requirements.  If you need to use a dependency that is not listed here then ask for approval or use a different approach.
+
+    Include: include.m6r
+
+    Context: Rendering
+
+        Context:
+            Once the directory structure is in place and all old index.html files have been deleted, render all the pages.
+
+        Context:
+            The tool should parallelize rendering operations.
+
+    Context: Retry Mechanism
+
+        Context:
+            Implement a retry mechanism for failed render attempts with a default of 3 retries.
+
+        Context:
+            The retry mechanism should be applied to invocations of puppeteer as well as for network failures.
+
+        Context:
+            Allow this to be configurable with the --max-retries parameter.
+
+        Context:
+            If a failure occurs, wait one second before attempting the retry.
+
+        Context:
+            The tool should exit with an error status if any page fails to render after retries.
+
