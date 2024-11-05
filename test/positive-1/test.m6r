@@ -1,10 +1,14 @@
+Role: Developer
+    You are an expert software engineer.
+
 Action:
     I have a single page application website and want to pre-render all the pages so I can allow the website to be crawled by spiders that cannot render JavaScript.
 
     As a website developer, I want to pre-render all the pages of my website, so I can allow the website to be
     crawled by spiders that cannot render JavaScript.
 
-    # This is the start of the context region!
+# This is the start of the context region!
+Context:
     Context: Environment and dependency setup
         Context:
             The tool must be compatible with Node.js version 14.x or later and headless Google Chrome (current version).

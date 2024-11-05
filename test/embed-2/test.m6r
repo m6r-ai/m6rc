@@ -1,5 +1,5 @@
 Action:
     This is a test.
 
-    Context: Files
-        Embed: test/embed-2/**/*.c
+Context: Files
+    Embed: test/embed-2/**/*.c

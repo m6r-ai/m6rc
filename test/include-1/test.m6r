@@ -4,6 +4,7 @@ Action:
     As a website developer, I want to pre-render all the pages of my website, so I can allow the website to be
     crawled by spiders that cannot render JavaScript.
 
+Context:
     Context: Environment and dependency setup
 
         Context:

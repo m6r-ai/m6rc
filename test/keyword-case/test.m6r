@@ -1,11 +1,11 @@
 action:
     This is an action
 
-    CONTEXT:
-        This is context
+CONTEXT:
+    This is context
 
-        context:
-            So is this
+    context:
+        So is this
 
-            Context:
-                and this!
+        Context:
+            and this!

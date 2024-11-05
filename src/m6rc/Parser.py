@@ -32,7 +32,9 @@ class Parser:
         lexers (list): Stack of lexers used for parsing multiple files.
     """
     def __init__(self):
-        self.syntax_tree = None
+        self.action_syntax_tree = None
+        self.context_syntax_tree = None
+        self.role_syntax_tree = None
         self.parse_errors = []
         self.lexers = []
         self.previously_seen_files = set()
@@ -50,19 +52,28 @@ class Parser:
         try:
             self.check_file_not_loaded(filename)
             self.lexers.append(MetaphorLexer(filename))
-            token = self.get_next_token()
 
-            if token.type != TokenType.ACTION:
-                self.raise_syntax_error(token, "Expected 'Action' keyword")
-                return False
+            while True:
+                token = self.get_next_token()
+                if token.type == TokenType.ACTION:
+                    if self.action_syntax_tree:
+                        self.raise_syntax_error(token, "'Action' already defined")
 
-            self.syntax_tree = self.parse_action(token)
+                    self.action_syntax_tree = self.parse_action(token)
+                elif token.type == TokenType.CONTEXT:
+                    if self.context_syntax_tree:
+                        self.raise_syntax_error(token, "'Context' already defined")
 
-            token_next = self.get_next_token()
-            if token_next.type != TokenType.END_OF_FILE:
-                self.raise_syntax_error(token_next, "Unexpected text after 'Action' block")
+                    self.context_syntax_tree = self.parse_context(token)
+                elif token.type == TokenType.ROLE:
+                    if self.role_syntax_tree:
+                        self.raise_syntax_error(token, "'Role' already defined")
 
-            return not self.parse_errors
+                    self.role_syntax_tree = self.parse_role(token)
+                elif token.type == TokenType.END_OF_FILE:
+                    return not self.parse_errors
+                else:
+                    self.raise_syntax_error(token, f"Unexpected token: {token.value} at top level")
         except FileNotFoundError as e:
             print(f"Error: {e}", file=sys.stderr)
             return False
@@ -99,7 +110,7 @@ class Parser:
 
     def get_syntax_tree(self):
         """Return the constructed AST."""
-        return self.syntax_tree
+        return [self.role_syntax_tree, self.context_syntax_tree, self.action_syntax_tree]
 
     def get_syntax_errors(self):
         """Return the list of syntax errors encountered."""
@@ -112,6 +123,14 @@ class Parser:
             raise FileAlreadyUsedError(filename)
 
         self.previously_seen_files.add(canonical_filename)
+
+    def parse_keyword_text(self, token):
+        """Parse keyword text."""
+        return ASTNode(token)
+
+    def parse_text(self, token):
+        """Parse a text block."""
+        return ASTNode(token)
 
     def parse_action(self, token):
         """Parse an action block and construct its AST node."""
@@ -138,9 +157,6 @@ class Parser:
                     self.raise_syntax_error(token, "Text must come first in an 'Action' block")
 
                 action_node.add_child(self.parse_text(token))
-            elif token.type == TokenType.CONTEXT:
-                action_node.add_child(self.parse_context(token))
-                seen_token_type = TokenType.CONTEXT
             elif token.type == TokenType.OUTDENT or token.type == TokenType.END_OF_FILE:
                 return action_node
             else:
@@ -148,14 +164,6 @@ class Parser:
                     token,
                     f"Unexpected token: {token.value} in 'Action' block"
                 )
-
-    def parse_keyword_text(self, token):
-        """Parse keyword text."""
-        return ASTNode(token)
-
-    def parse_text(self, token):
-        """Parse a text block."""
-        return ASTNode(token)
 
     def parse_context(self, token):
         """Parse a Context block."""
@@ -168,8 +176,10 @@ class Parser:
             context_node.add_child(self.parse_keyword_text(init_token))
             indent_token = self.get_next_token()
             if indent_token.type != TokenType.INDENT:
-                self.raise_syntax_error(token, "Expected indent after keyword description " \
-                                        "for 'Context' block")
+                self.raise_syntax_error(
+                    token,
+                    "Expected indent after keyword description for 'Context' block"
+                )
         elif init_token.type != TokenType.INDENT:
             self.raise_syntax_error(token, "Expected description or indent for 'Context' block")
 
@@ -183,9 +193,6 @@ class Parser:
             elif token.type == TokenType.CONTEXT:
                 context_node.add_child(self.parse_context(token))
                 seen_token_type = TokenType.CONTEXT
-            elif token.type == TokenType.ROLE:
-                context_node.add_child(self.parse_role(token))
-                seen_token_type = TokenType.ROLE
             elif token.type == TokenType.OUTDENT or token.type == TokenType.END_OF_FILE:
                 return context_node
             else:

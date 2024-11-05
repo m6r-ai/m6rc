@@ -1,5 +1,5 @@
 Action:
     This is a test.
 
-    Context: Files
-        Embed: test/embed-3/embed.c
+Context: Files
+    Embed: test/embed-3/embed.c

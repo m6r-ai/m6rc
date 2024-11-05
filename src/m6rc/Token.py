@@ -30,7 +30,8 @@ class TokenType(Enum):
     ROLE = 9
     BAD_INDENT = 10
     BAD_OUTDENT = 11
-    END_OF_FILE = 12
+    TAB = 12
+    END_OF_FILE = 13
 
 
 class Token:

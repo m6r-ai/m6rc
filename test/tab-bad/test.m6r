@@ -1,0 +1,14 @@
+Action:
+    Test indentation processing
+
+Context:
+    Not tab indented.
+
+    Context:
+	    Tab indented #1
+
+    Context:
+    	Tab indented #2
+
+Context:
+    Indent.

@@ -8,6 +8,10 @@
         "type": "negative"
     },
     {
+        "command": "python3 src/m6rc/m6rc.py test/tab-bad/test.m6r",
+        "type": "negative"
+    },
+    {
         "command": "python3 src/m6rc/m6rc.py test/keyword-case/test.m6r",
         "type": "positive"
     },

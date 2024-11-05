@@ -30,7 +30,7 @@ def recurse(node, depth, out):
         out (file): The output stream to write to.
     """
     indent = " " * (depth * 4)
-    keyword = "";
+    keyword = ""
 
     if node.token_type == TokenType.TEXT:
         out.write(f"{indent}{node.value}\n")
@@ -40,6 +40,8 @@ def recurse(node, depth, out):
         keyword = "Action:"
     elif node.token_type == TokenType.CONTEXT:
         keyword = "Context:"
+    elif node.token_type == TokenType.ROLE:
+        keyword = "Role:"
 
     if node.token_type in (TokenType.ACTION, TokenType.CONTEXT, TokenType.ROLE):
         if node.child_nodes:
@@ -89,7 +91,7 @@ def main():
     # Provide a default summary of Metaphor.
     output_stream.write("The following is written in a language called Metaphor.\n\n")
     output_stream.write("Metaphor has the structure of a document tree with branches and leaves being \n")
-    output_stream.write("prefixed by the keywords \"Context:\" or \"Action:\".\n\n")
+    output_stream.write("prefixed by the keywords \"Role:\", \"Context:\" or \"Action:\".\n\n")
     output_stream.write("These have an optional section name that will immediately follow them on the same line.  \n")
     output_stream.write("If this is missing then the section name is not defined.\n\n")
     output_stream.write("After a keyword line the text may be indented to include an optional block of descriptive \n")
@@ -99,6 +101,7 @@ def main():
     output_stream.write("\"Context:\" indented by 8 spaces is a child of the context above it that is indented by 4 \n")
     output_stream.write("spaces.  One indented 12 spaces would be a child of the block above it that is indented by \n")
     output_stream.write("8 spaces.\n\n")
+    output_stream.write("If a \"Role:\" block exists then this is the role you should fulfil.\n")
     output_stream.write("Please review all of the \"Context:\" blocks to understand what is required and then \n")
     output_stream.write("process all of the items included in the \"Action:\" section.\n\n")
     output_stream.write("When you process the actions please carefully ensure you do all of them accurately.  These \n")
@@ -106,7 +109,9 @@ def main():
     output_stream.write("elements and do not include any placeholders.\n\n")
 
     syntax_tree = parser.get_syntax_tree()
-    recurse(syntax_tree, 0, output_stream)
+    for block in syntax_tree:
+        if block is not None:
+            recurse(block, 0, output_stream)
 
     if output_file:
         output_stream.close()
