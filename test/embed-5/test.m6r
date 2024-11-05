@@ -1,0 +1,6 @@
+Action:
+    This is a test.
+
+    Context: Files
+        Embed: test/embed-5/embed.C
+        Embed: test/embed-5/EMBED.M6R

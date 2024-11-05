@@ -40,6 +40,10 @@
         "type": "negative"
     },
     {
+        "command": "python3 src/m6rc/m6rc.py test/embed-5/test.m6r",
+        "type": "positive"
+    },
+    {
         "command": "python3 src/m6rc/m6rc.py test/positive-1/test.m6r",
         "type": "positive"
     }
