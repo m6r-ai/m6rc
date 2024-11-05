@@ -30,10 +30,10 @@ class MetaphorLexer(Lexer):
                 (default is 4).
         """
         self.keyword_map = {
-            "Include:": TokenType.INCLUDE,
-            "Embed:": TokenType.EMBED,
             "Action:": TokenType.ACTION,
             "Context:": TokenType.CONTEXT,
+            "Embed:": TokenType.EMBED,
+            "Include:": TokenType.INCLUDE,
             "Role:": TokenType.ROLE
         }
         self.in_text_block = False
@@ -112,19 +112,20 @@ class MetaphorLexer(Lexer):
 
             # Split the line by spaces to check for a keyword followed by text
             words = stripped_line.split(maxsplit=1)
+            first_word = words[0].capitalize()
 
             # Check if the first word is a recognized keyword
-            if words[0] in self.keyword_map:
+            if first_word in self.keyword_map:
                 # Create a keyword token
                 self._process_indentation(line, start_column)
-                self.tokens.append(Token(self.keyword_map[words[0]], words[0], line,
+                self.tokens.append(Token(self.keyword_map[first_word], first_word, line,
                                             self.filename, self.current_line, start_column))
 
                 # If there is text after the keyword, create a separate text token
                 if len(words) > 1:
                     self.tokens.append(Token(TokenType.KEYWORD_TEXT, words[1], line,
                                                 self.filename, self.current_line,
-                                                start_column + len(words[0]) + 1))
+                                                start_column + len(first_word) + 1))
 
                 self.in_text_block = False
                 return
