@@ -12,196 +12,191 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Dict, List
 from Token import Token, TokenType
 from Lexer import Lexer
 
 class MetaphorLexer(Lexer):
     """
-    Lexer for handling the metaphor language with its specific syntax, including keywords like
-    Action, Context, Role, and proper indentation handling.
+    Lexer for handling the Metaphor language with its specific syntax.
+
+    The Metaphor language consists of:
+    - Keywords (Action:, Context:, Role:, etc)
+    - Indented blocks
+    - Text content
+    - Include/Embed directives
+
+    This lexer handles proper indentation, text block detection, and keyword parsing.
     """
-    def __init__(self, filename, search_paths, indent_spaces=4):
+
+    # Constants for language elements
+    INDENT_SPACES = 4
+    COMMENT_CHAR = "#"
+    TAB_CHAR = "\t"
+
+    # Mapping of keywords to their token types
+    KEYWORDS: Dict[str, TokenType] = {
+        "Action:": TokenType.ACTION,
+        "Context:": TokenType.CONTEXT,
+        "Embed:": TokenType.EMBED,
+        "Include:": TokenType.INCLUDE,
+        "Role:": TokenType.ROLE
+    }
+
+    def __init__(self, filename: str, search_paths: List[str]):
         """
-        Initializes the MetaphorLexer.
+        Initialize the MetaphorLexer.
 
         Args:
-            filename (str): The filename to be lexed.
-            indent_spaces (int): The number of spaces that make up one level of indentation
-                (default is 4).
+            filename: Name of the file to parse
+            search_paths: List of paths to search for included files
         """
-        self.keyword_map = {
-            "Action:": TokenType.ACTION,
-            "Context:": TokenType.CONTEXT,
-            "Embed:": TokenType.EMBED,
-            "Include:": TokenType.INCLUDE,
-            "Role:": TokenType.ROLE
-        }
         self.in_text_block = False
         self.indent_column = 1
-        self.indent_spaces = indent_spaces
         super().__init__(filename, search_paths)
 
-    def _tokenize(self):
-        """Tokenizes the input file into appropriate tokens."""
+    def _tokenize(self) -> None:
+        """
+        Tokenize the input file into appropriate tokens.
+        Processes each line for indentation, keywords, and text content.
+        """
+        if not self.input:
+            return
+
         lines = self.input.splitlines()
         for line in lines:
-            self._process_line_contents(line)
+            self._process_line(line)
             self.current_line += 1
 
-        # Handles remaining outdents as the file has ended.
+        # Handle remaining outdents at end of file
+        self._handle_final_outdents()
+
+    def _handle_final_outdents(self) -> None:
+        """Handle any remaining outdents needed at the end of file."""
         while self.indent_column > 1:
             self.tokens.append(
                 Token(
-                    TokenType.OUTDENT,
-                    "[Outdent]",
-                    "",
-                    self.filename,
-                    self.current_line,
-                    self.indent_column
+                    type=TokenType.OUTDENT,
+                    value="[Outdent]",
+                    input="",
+                    filename=self.filename,
+                    line=self.current_line,
+                    column=self.indent_column
                 )
             )
-            self.indent_column -= self.indent_spaces
+            self.indent_column -= self.INDENT_SPACES
 
-    def _process_indentation(self, line, start_column):
-        """Processes the indentation of the current line."""
-        if len(line) == 0:
-            return
-
-        # Calculate the difference in indentation
-        indent_offset = start_column - self.indent_column
-
-        # Handle indentation increase (INDENT)
-        if indent_offset > 0:
-            if indent_offset % self.indent_spaces != 0:
-                self.tokens.append(
-                    Token(
-                        TokenType.BAD_INDENT,
-                        "[Bad Indent]",
-                        line,
-                        self.filename,
-                        self.current_line,
-                        start_column
-                    )
-                )
-                return
-
-            while indent_offset > 0:
-                self.tokens.append(
-                    Token(
-                        TokenType.INDENT,
-                        "[Indent]",
-                        line,
-                        self.filename,
-                        self.current_line,
-                        start_column
-                    )
-                )
-                indent_offset -= self.indent_spaces
-
-            self.indent_column = start_column
-
-        # Handle indentation decrease (OUTDENT)
-        elif indent_offset < 0:
-            if abs(indent_offset) % self.indent_spaces != 0:
-                self.tokens.append(
-                    Token(
-                        TokenType.BAD_OUTDENT,
-                        "[Bad Outdent]",
-                        line,
-                        self.filename,
-                        self.current_line,
-                        start_column
-                    )
-                )
-                return
-
-            while indent_offset < 0:
-                self.tokens.append(
-                    Token(
-                        TokenType.OUTDENT,
-                        "[Outdent]",
-                        line,
-                        self.filename,
-                        self.current_line,
-                        start_column
-                    )
-                )
-                indent_offset += self.indent_spaces
-
-            self.indent_column = start_column
-
-    def _process_line_contents(self, line):
+    def _process_line(self, line: str) -> None:
         """
-        Read the next line and determine if it's a keyword followed by text.
-        It also processes indentation at the start of the line.
+        Process a single line of input.
 
         Args:
-            line (str): The current line to process.
-
-        Returns:
-            list[Token]: A list of Token instances representing both indentation and text.
+            line: The line to process
         """
         stripped_line = line.lstrip(' ')
         start_column = len(line) - len(stripped_line) + 1
 
-        if stripped_line:
-            # Is this a comment?  If yes, we're done.
-            if stripped_line.startswith("#"):
-                return
+        if not stripped_line:
+            return
 
-            # Do we have a tab character?  If yes, inject a tab into the token stream because that's
-            # a problem!
-            if stripped_line.startswith("\t"):
-                self.tokens.append(
-                    Token(
-                        TokenType.TAB,
-                        "[Tab]",
-                        line,
-                        self.filename,
-                        self.current_line,
-                        start_column
-                    )
+        if stripped_line.startswith(self.COMMENT_CHAR):
+            return
+
+        if self._handle_tab_character(stripped_line, start_column):
+            stripped_line = stripped_line[1:]
+
+        self._handle_line_content(line, stripped_line, start_column)
+
+    def _handle_tab_character(self, line: str, column: int) -> bool:
+        """
+        Handle tab characters in the input.
+
+        Args:
+            line: The line to check
+            column: The current column number
+
+        Returns:
+            True if a tab was handled, False otherwise
+        """
+        if line.startswith(self.TAB_CHAR):
+            self.tokens.append(
+                Token(
+                    type=TokenType.TAB,
+                    value="[Tab]",
+                    input=line,
+                    filename=self.filename,
+                    line=self.current_line,
+                    column=column
                 )
-                stripped_line = stripped_line[1:]
+            )
+            return True
+        return False
 
-            # Split the line by spaces to check for a keyword followed by text
-            words = stripped_line.split(maxsplit=1)
-            first_word = words[0].capitalize()
+    def _handle_line_content(self, full_line: str, stripped_line: str, start_column: int) -> None:
+        """
+        Process the content of a line after initial cleaning.
 
-            # Check if the first word is a recognized keyword
-            if first_word in self.keyword_map:
-                # Create a keyword token
-                self._process_indentation(line, start_column)
-                self.tokens.append(
-                    Token(
-                        self.keyword_map[first_word],
-                        first_word,
-                        line,
-                        self.filename,
-                        self.current_line,
-                        start_column
-                    )
+        Args:
+            full_line: The complete line
+            stripped_line: The line with leading whitespace removed
+            start_column: The starting column of the content
+        """
+        words = stripped_line.split(maxsplit=1)
+        first_word = words[0].capitalize()
+
+        if first_word in self.KEYWORDS:
+            self._handle_keyword_line(full_line, words, first_word, start_column)
+        else:
+            self._handle_text_line(full_line, start_column)
+
+    def _handle_keyword_line(self, line: str, words: List[str], keyword: str, start_column: int) -> None:
+        """
+        Handle a line that starts with a keyword.
+
+        Args:
+            line: The complete line
+            words: The line split into words
+            keyword: The keyword found
+            start_column: The starting column of the content
+        """
+        self._process_indentation(line, start_column)
+
+        # Create keyword token
+        self.tokens.append(
+            Token(
+                type=self.KEYWORDS[keyword],
+                value=keyword,
+                input=line,
+                filename=self.filename,
+                line=self.current_line,
+                column=start_column
+            )
+        )
+
+        # Handle any text after the keyword
+        if len(words) > 1:
+            self.tokens.append(
+                Token(
+                    type=TokenType.KEYWORD_TEXT,
+                    value=words[1],
+                    input=line,
+                    filename=self.filename,
+                    line=self.current_line,
+                    column=start_column + len(keyword) + 1
                 )
+            )
 
-                # If there is text after the keyword, create a separate text token
-                if len(words) > 1:
-                    self.tokens.append(
-                        Token(
-                            TokenType.KEYWORD_TEXT,
-                            words[1],
-                            line,
-                            self.filename,
-                            self.current_line,
-                            start_column + len(first_word) + 1
-                        )
-                    )
+        self.in_text_block = False
 
-                self.in_text_block = False
-                return
+    def _handle_text_line(self, line: str, start_column: int) -> None:
+        """
+        Handle a line that contains text content.
 
-        # We're dealing with text.  If we're already in a text block then we want to use the same
-        # indentation level for all rows of text unless we see outdenting (in which case we've got
-        # bad text, but we'll leave that to the parser).
+        Args:
+            line: The line to process
+            start_column: The starting column of the content
+        """
+        # Adjust indentation for continued text blocks
         if self.in_text_block:
             if start_column > self.indent_column:
                 start_column = self.indent_column
@@ -210,19 +205,108 @@ class MetaphorLexer(Lexer):
         else:
             self._process_indentation(line, start_column)
 
-        # If no keyword is found, treat the whole line as text
-        text_line = line[start_column - 1:]
-        if self.in_text_block or len(text_line) > 0:
+        text_content = line[start_column - 1:]
+        if text_content:
             self.tokens.append(
                 Token(
-                    TokenType.TEXT,
-                    line[start_column - 1:],
-                    line,
-                    self.filename,
-                    self.current_line,
-                    start_column
+                    type=TokenType.TEXT,
+                    value=text_content,
+                    input=line,
+                    filename=self.filename,
+                    line=self.current_line,
+                    column=start_column
                 )
             )
-
-        if len(text_line) > 0:
             self.in_text_block = True
+
+    def _process_indentation(self, line: str, start_column: int) -> None:
+        """
+        Process the indentation of the current line.
+
+        Args:
+            line: The current line
+            start_column: The starting column of the content
+        """
+        if not line:
+            return
+
+        indent_offset = start_column - self.indent_column
+
+        if indent_offset > 0:
+            self._handle_indent(line, start_column, indent_offset)
+        elif indent_offset < 0:
+            self._handle_outdent(line, start_column, indent_offset)
+
+    def _handle_indent(self, line: str, start_column: int, indent_offset: int) -> None:
+        """
+        Handle an increase in indentation.
+
+        Args:
+            line: The current line
+            start_column: The starting column of the content
+            indent_offset: The change in indentation
+        """
+        if indent_offset % self.INDENT_SPACES != 0:
+            self.tokens.append(
+                Token(
+                    type=TokenType.BAD_INDENT,
+                    value="[Bad Indent]",
+                    input=line,
+                    filename=self.filename,
+                    line=self.current_line,
+                    column=start_column
+                )
+            )
+            return
+
+        while indent_offset > 0:
+            self.tokens.append(
+                Token(
+                    type=TokenType.INDENT,
+                    value="[Indent]",
+                    input=line,
+                    filename=self.filename,
+                    line=self.current_line,
+                    column=start_column
+                )
+            )
+            indent_offset -= self.INDENT_SPACES
+
+        self.indent_column = start_column
+
+    def _handle_outdent(self, line: str, start_column: int, indent_offset: int) -> None:
+        """
+        Handle a decrease in indentation.
+
+        Args:
+            line: The current line
+            start_column: The starting column of the content
+            indent_offset: The change in indentation
+        """
+        if abs(indent_offset) % self.INDENT_SPACES != 0:
+            self.tokens.append(
+                Token(
+                    type=TokenType.BAD_OUTDENT,
+                    value="[Bad Outdent]",
+                    input=line,
+                    filename=self.filename,
+                    line=self.current_line,
+                    column=start_column
+                )
+            )
+            return
+
+        while indent_offset < 0:
+            self.tokens.append(
+                Token(
+                    type=TokenType.OUTDENT,
+                    value="[Outdent]",
+                    input=line,
+                    filename=self.filename,
+                    line=self.current_line,
+                    column=start_column
+                )
+            )
+            indent_offset += self.INDENT_SPACES
+
+        self.indent_column = start_column
