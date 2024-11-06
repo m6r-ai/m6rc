@@ -12,28 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
+from dataclasses import dataclass
+from enum import IntEnum
 
-class TokenType(Enum):
+class TokenType(IntEnum):
     """
     Enum-like class representing different types of tokens in the source file.
     """
-    NONE = 0
-    INDENT = 1
-    OUTDENT = 2
-    INCLUDE = 3
-    EMBED = 4
-    KEYWORD_TEXT = 5
-    TEXT = 6
-    ACTION = 7
-    CONTEXT = 8
-    ROLE = 9
-    BAD_INDENT = 10
-    BAD_OUTDENT = 11
-    TAB = 12
-    END_OF_FILE = 13
+    NONE: int = 0
+    INDENT: int = 1
+    OUTDENT: int = 2
+    INCLUDE: int = 3
+    EMBED: int = 4
+    KEYWORD_TEXT: int = 5
+    TEXT: int = 6
+    ACTION: int = 7
+    CONTEXT: int = 8
+    ROLE: int = 9
+    BAD_INDENT: int = 10
+    BAD_OUTDENT: int = 11
+    TAB: int = 12
+    END_OF_FILE: int = 13
 
 
+@dataclass(frozen=True)
 class Token:
     """
     Represents a token in the input stream.
@@ -46,13 +48,12 @@ class Token:
         line (int): The line number in the file where the token is located.
         column (int): The column number where the token starts.
     """
-    def __init__(self, type_, value, input_, filename, line, column):
-        self.type = type_
-        self.value = value
-        self.input = input_
-        self.filename = filename
-        self.line = line
-        self.column = column
+    type: TokenType
+    value: str
+    input: str
+    filename: str
+    line: int
+    column: int
 
     def __str__(self):
         return f"Token(type={self.type}, value='{self.value}', " \
