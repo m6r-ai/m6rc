@@ -14,6 +14,7 @@
 
 import glob
 import os
+from pathlib import Path
 
 from Token import Token, TokenType
 from EmbedLexer import EmbedLexer
@@ -79,7 +80,8 @@ class MetaphorParser:
 
         try:
             self.check_file_not_loaded(filename)
-            self.lexers.append(MetaphorLexer(filename, search_paths))
+            input_text = self._read_file(filename)
+            self.lexers.append(MetaphorLexer(input_text, filename))
 
             while True:
                 token = self.get_next_token()
@@ -150,6 +152,34 @@ class MetaphorParser:
             message, token.filename, token.line, token.column, token.input
         )
         self.parse_errors.append(error)
+
+    def _find_file_path(self, filename):
+        """Try to find a valid path for a file, given all the search path options"""
+        if Path(filename).exists():
+            return filename
+
+        # If we don't have an absolute path then we can try search paths.
+        if not os.path.isabs(filename):
+            for path in self.search_paths:
+                try_name = os.path.join(path, filename)
+                if Path(try_name).exists():
+                    return try_name
+
+        raise FileNotFoundError(f"File not found: {filename}")
+
+    def _read_file(self, filename):
+        """Read file content into memory."""
+        try:
+            with open(filename, 'r', encoding='utf-8') as file:
+                return file.read()
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"File not found: {filename}") from e
+        except PermissionError as e:
+            raise FileNotFoundError(f"You do not have permission to access: {filename}") from e
+        except IsADirectoryError as e:
+            raise FileNotFoundError(f"Is a directory: {filename}") from e
+        except OSError as e:
+            raise FileNotFoundError(f"OS error: {e}") from e
 
     def check_file_not_loaded(self, filename):
         """Check we have not already loaded a file."""
@@ -270,7 +300,9 @@ class MetaphorParser:
 
         filename = token_next.value
         self.check_file_not_loaded(filename)
-        self.lexers.append(MetaphorLexer(filename, self.search_paths))
+        try_file = self._find_file_path(filename)
+        input_text = self._read_file(try_file)
+        self.lexers.append(MetaphorLexer(input_text, try_file))
 
     def parse_embed(self):
         """Parse an Embed block and load the embedded file."""
@@ -290,4 +322,5 @@ class MetaphorParser:
             return
 
         for file in files:
-            self.lexers.append(EmbedLexer(file, []))
+            input_text = self._read_file(file)
+            self.lexers.append(EmbedLexer(input_text, file))
