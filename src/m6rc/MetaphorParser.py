@@ -39,6 +39,13 @@ class MetaphorParserSyntaxError(Exception):
         self.input_text = input_text
 
 
+class MetaphorParserError(Exception):
+    """Exception wrapper generated when there is a syntax error."""
+    def __init__(self, message, errors):
+        super().__init__(message)
+        self.errors = errors
+
+
 class MetaphorParser:
     """
     Parser class to process tokens and build an Abstract Syntax Tree (AST).
@@ -92,7 +99,10 @@ class MetaphorParser:
 
                     self.role_syntax_tree = self.parse_role(token)
                 elif token.type == TokenType.END_OF_FILE:
-                    return not self.parse_errors
+                    if self.parse_errors:
+                        raise(MetaphorParserError("parser error", self.parse_errors))
+
+                    return [self.role_syntax_tree, self.context_syntax_tree, self.action_syntax_tree]
                 else:
                     self.record_syntax_error(token, f"Unexpected token: {token.value} at top level")
         except FileNotFoundError as e:
@@ -105,7 +115,7 @@ class MetaphorParser:
                 self.parse_errors.append(MetaphorParserSyntaxError(
                     f"{e}", err_token.filename, err_token.line, err_token.column, err_token.input
                 ))
-            return False
+            raise(MetaphorParserError("parser error", self.parse_errors)) from e
         except MetaphorParserFileAlreadyUsedError as e:
             self.parse_errors.append(MetaphorParserSyntaxError(
                 f"The file '{e.filename}' has already been used",
@@ -114,7 +124,7 @@ class MetaphorParser:
                 e.token.column,
                 e.token.input
             ))
-            return False
+            raise(MetaphorParserError("parser error", self.parse_errors)) from e
 
     def get_next_token(self):
         """Get the next token from the active lexer."""
@@ -140,14 +150,6 @@ class MetaphorParser:
             message, token.filename, token.line, token.column, token.input
         )
         self.parse_errors.append(error)
-
-    def get_syntax_tree(self):
-        """Return the constructed AST."""
-        return [self.role_syntax_tree, self.context_syntax_tree, self.action_syntax_tree]
-
-    def get_syntax_errors(self):
-        """Return the list of syntax errors encountered."""
-        return self.parse_errors
 
     def check_file_not_loaded(self, filename):
         """Check we have not already loaded a file."""

@@ -18,7 +18,7 @@ import argparse
 from pathlib import Path
 
 from Token import TokenType
-from MetaphorParser import MetaphorParser
+from MetaphorParser import MetaphorParser, MetaphorParserError
 
 
 def recurse(node, depth, out):
@@ -92,8 +92,10 @@ def main():
             return 1
 
     metaphor_parser = MetaphorParser()
-    if not metaphor_parser.parse(input_file, search_paths):
-        for error in metaphor_parser.get_syntax_errors():
+    try:
+        syntax_tree = metaphor_parser.parse(input_file, search_paths)
+    except MetaphorParserError as e:
+        for error in e.errors:
             caret = ""
             for _ in range(1, error.column):
                 caret += " "
@@ -126,7 +128,6 @@ def main():
     output_stream.write("need to fulfil all the details described in the \"Context:\".  Ensure you complete all the \n")
     output_stream.write("elements and do not include any placeholders.\n\n")
 
-    syntax_tree = metaphor_parser.get_syntax_tree()
     for block in syntax_tree:
         if block is not None:
             recurse(block, 0, output_stream)
