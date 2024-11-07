@@ -14,9 +14,8 @@
 
 from typing import Dict, List
 from Token import Token, TokenType
-from Lexer import Lexer
 
-class MetaphorLexer(Lexer):
+class MetaphorLexer:
     """
     Lexer for handling the Metaphor language with its specific syntax.
 
@@ -43,7 +42,7 @@ class MetaphorLexer(Lexer):
         "Role:": TokenType.ROLE
     }
 
-    def __init__(self, filename: str, search_paths: List[str]):
+    def __init__(self, input_text: str, filename: str):
         """
         Initialize the MetaphorLexer.
 
@@ -53,7 +52,18 @@ class MetaphorLexer(Lexer):
         """
         self.in_text_block = False
         self.indent_column = 1
-        super().__init__(filename, search_paths)
+        self.filename = filename
+        self.tokens = []
+        self.current_line = 1
+        self.input = input_text
+        self._tokenize()
+
+    def get_next_token(self):
+        """Return the next token from the token list."""
+        if self.tokens:
+            return self.tokens.pop(0)
+
+        return Token(TokenType.END_OF_FILE, "", "", self.filename, self.current_line, 1)
 
     def _tokenize(self) -> None:
         """

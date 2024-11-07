@@ -13,9 +13,8 @@
 # limitations under the License.
 
 from Token import Token, TokenType
-from Lexer import Lexer
 
-class EmbedLexer(Lexer):
+class EmbedLexer:
     """
     Lexer for handling embedded content like code blocks.
     """
@@ -64,6 +63,20 @@ class EmbedLexer(Lexer):
         "yaml": "yaml",
         "yml": "yaml"
     }
+
+    def __init__(self, input_text, filename):
+        self.filename = filename
+        self.tokens = []
+        self.current_line = 1
+        self.input = input_text
+        self._tokenize()
+
+    def get_next_token(self):
+        """Return the next token from the token list."""
+        if self.tokens:
+            return self.tokens.pop(0)
+
+        return Token(TokenType.END_OF_FILE, "", "", self.filename, self.current_line, 1)
 
     def _get_language_from_file_extension(self, filename):
         """Get a language name from a filename extension."""
