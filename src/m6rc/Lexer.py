@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-import sys
 from pathlib import Path
 
 from Token import Token, TokenType
