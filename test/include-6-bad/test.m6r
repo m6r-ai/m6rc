@@ -1,0 +1,17 @@
+Action:
+    I have a single page application website and want to pre-render all the pages so I can allow the website to be crawled by spiders that cannot render JavaScript.
+
+    As a website developer, I want to pre-render all the pages of my website, so I can allow the website to be
+    crawled by spiders that cannot render JavaScript.
+
+Context:
+    Context: Environment and dependency setup
+
+        Context:
+            The tool must be compatible with Node.js version 14.x or later and headless Google Chrome (current version).
+
+    Include: test/include-6-bad
+
+        Context:
+            The tool should exit with an error status if any page fails to render after retries.
+

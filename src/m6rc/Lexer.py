@@ -51,18 +51,14 @@ class Lexer:
             try_file = self._find_file_path(filename)
             with open(try_file, 'r', encoding='utf-8') as file:
                 return file.read()
-        except FileNotFoundError:
-            print(f"File not found: {filename}", file=sys.stderr)
-            return
-        except PermissionError:
-            print(f"You do not have permission to access: {filename}", file=sys.stderr)
-            return
-        except IsADirectoryError:
-            print(f"Is a directory: {filename}", file=sys.stderr)
-            return
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"File not found: {filename}") from e
+        except PermissionError as e:
+            raise FileNotFoundError(f"You do not have permission to access: {filename}") from e
+        except IsADirectoryError as e:
+            raise FileNotFoundError(f"Is a directory: {filename}") from e
         except OSError as e:
-            print(f"OS error: {e}", file=sys.stderr)
-            return
+            raise FileNotFoundError(f"OS error: {e}") from e
 
     def get_next_token(self):
         """Return the next token from the token list."""

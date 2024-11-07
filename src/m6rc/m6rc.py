@@ -18,7 +18,7 @@ import argparse
 from pathlib import Path
 
 from Token import TokenType
-from Parser import Parser
+from MetaphorParser import MetaphorParser
 
 
 def recurse(node, depth, out):
@@ -91,10 +91,17 @@ def main():
             print(f"Error: Could not open output file {output_file}: {e}", file=sys.stderr)
             return 1
 
-    parser = Parser()
-    if not parser.parse(input_file, search_paths):
-        for error in parser.get_syntax_errors():
-            print(f"----------------\n{error}", file=sys.stderr)
+    metaphor_parser = MetaphorParser()
+    if not metaphor_parser.parse(input_file, search_paths):
+        for error in metaphor_parser.get_syntax_errors():
+            caret = ""
+            for _ in range(1, error.column):
+                caret += " "
+
+            error_message = f"{error.message}: line {error.line}, column {error.column}, " \
+                f"file {error.filename}\n{caret}|\n{caret}v\n{error.input_text}"
+
+            print(f"----------------\n{error_message}", file=sys.stderr)
 
         print("----------------\n", file=sys.stderr)
         return -1
@@ -119,7 +126,7 @@ def main():
     output_stream.write("need to fulfil all the details described in the \"Context:\".  Ensure you complete all the \n")
     output_stream.write("elements and do not include any placeholders.\n\n")
 
-    syntax_tree = parser.get_syntax_tree()
+    syntax_tree = metaphor_parser.get_syntax_tree()
     for block in syntax_tree:
         if block is not None:
             recurse(block, 0, output_stream)
