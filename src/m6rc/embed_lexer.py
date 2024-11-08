@@ -14,7 +14,7 @@
 
 from typing import Dict, List
 
-from Token import Token, TokenType
+from metaphor_token import Token, TokenType
 
 class EmbedLexer:
     """

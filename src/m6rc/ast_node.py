@@ -13,7 +13,8 @@
 # limitations under the License.
 
 from typing import List, Optional
-from Token import Token, TokenType
+
+from metaphor_token import Token, TokenType
 
 class ASTNode:
     """

@@ -17,8 +17,8 @@ import sys
 import argparse
 from pathlib import Path
 
-from Token import TokenType
-from MetaphorParser import MetaphorParser, MetaphorParserError
+from metaphor_token import TokenType
+from metaphor_parser import MetaphorParser, MetaphorParserError
 
 
 def recurse(node, depth, out):

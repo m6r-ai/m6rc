@@ -18,10 +18,10 @@ from pathlib import Path
 
 from typing import List, Set, Optional, Union
 
-from Token import Token, TokenType
-from EmbedLexer import EmbedLexer
-from MetaphorLexer import MetaphorLexer
-from ASTNode import ASTNode
+from metaphor_token import Token, TokenType
+from embed_lexer import EmbedLexer
+from metaphor_lexer import MetaphorLexer
+from ast_node import ASTNode
 
 class MetaphorParserFileAlreadyUsedError(Exception):
     """Exception raised when a file is used more than once."""
