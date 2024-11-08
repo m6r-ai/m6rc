@@ -31,8 +31,6 @@ class MetaphorLexer:
 
     # Constants for language elements
     INDENT_SPACES = 4
-    COMMENT_CHAR = "#"
-    TAB_CHAR = "\t"
 
     # Mapping of keywords to their token types
     KEYWORDS: Final[Dict[str, TokenType]] = {
@@ -110,15 +108,18 @@ class MetaphorLexer:
         if not stripped_line:
             return
 
-        if stripped_line.startswith(self.COMMENT_CHAR):
+        # Is this line a comment?
+        if stripped_line.startswith('#'):
             return
 
-        if self._handle_tab_character(stripped_line, start_column):
+        # Does this line start with a tab character?
+        if stripped_line.startswith('\t'):
+            self._handle_tab_character(stripped_line, start_column)
             stripped_line = stripped_line[1:]
 
         self._handle_line_content(line, stripped_line, start_column)
 
-    def _handle_tab_character(self, line: str, column: int) -> bool:
+    def _handle_tab_character(self, line: str, column: int) -> None:
         """
         Handle tab characters in the input.
 
@@ -129,19 +130,16 @@ class MetaphorLexer:
         Returns:
             True if a tab was handled, False otherwise
         """
-        if line.startswith(self.TAB_CHAR):
-            self.tokens.append(
-                Token(
-                    type=TokenType.TAB,
-                    value="[Tab]",
-                    input=line,
-                    filename=self.filename,
-                    line=self.current_line,
-                    column=column
-                )
+        self.tokens.append(
+            Token(
+                type=TokenType.TAB,
+                value="[Tab]",
+                input=line,
+                filename=self.filename,
+                line=self.current_line,
+                column=column
             )
-            return True
-        return False
+        )
 
     def _handle_line_content(self, full_line: str, stripped_line: str, start_column: int) -> None:
         """
