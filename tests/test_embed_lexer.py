@@ -35,3 +35,27 @@ def test_embed_lexer_tokenization(sample_input):
     assert tokens[0].value.startswith("File:")
     assert "```python" in tokens[1].value
 
+def test_embed_lexer():
+    """Test the EmbedLexer's token generation"""
+    input_text = "Test content"
+    lexer = EmbedLexer(input_text, "test.txt")
+    
+    tokens = []
+    while True:
+        token = lexer.get_next_token()
+        tokens.append(token)
+        if token.type == TokenType.END_OF_FILE:
+            break
+    
+    # Should generate these tokens:
+    # 1. File: test.txt
+    # 2. ```plaintext
+    # 3. Test content
+    # 4. ```
+    # 5. END_OF_FILE
+    assert len(tokens) == 5
+    assert tokens[0].value == "File: test.txt"
+    assert tokens[1].value == "```plaintext"
+    assert tokens[2].value == "Test content"
+    assert tokens[3].value == "```"
+    assert tokens[4].type == TokenType.END_OF_FILE
