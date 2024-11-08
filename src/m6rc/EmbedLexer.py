@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Dict, List
+
 from Token import Token, TokenType
 
 class EmbedLexer:
@@ -19,7 +21,7 @@ class EmbedLexer:
     Lexer for handling embedded content like code blocks.
     """
 
-    file_exts = {
+    file_exts: Dict[str, str] = {
         "bash": "bash",
         "c": "c",
         "clj": "clojure",
@@ -65,32 +67,28 @@ class EmbedLexer:
     }
 
     def __init__(self, input_text, filename):
-        self.filename = filename
-        self.tokens = []
-        self.current_line = 1
-        self.input = input_text
+        self.filename: str = filename
+        self.tokens: List[Token] = []
+        self.current_line: int = 1
+        self.input: str = input_text
         self._tokenize()
 
-    def get_next_token(self):
+    def get_next_token(self) -> Token:
         """Return the next token from the token list."""
         if self.tokens:
             return self.tokens.pop(0)
 
         return Token(TokenType.END_OF_FILE, "", "", self.filename, self.current_line, 1)
 
-    def _get_language_from_file_extension(self, filename):
+    def _get_language_from_file_extension(self, filename: str) -> str:
         """Get a language name from a filename extension."""
-        extension = ""
+        extension: str = ""
         if '.' in filename:
             extension = (filename.rsplit('.', 1)[-1]).lower()
 
-        language = "plaintext"
-        if extension in self.file_exts:
-            language = self.file_exts[extension]
+        return self.file_exts.get(extension, "plaintext")
 
-        return language
-
-    def _tokenize(self):
+    def _tokenize(self) -> None:
         """Tokenizes the input file and handles embedded content."""
         self.tokens.append(Token(TokenType.TEXT, f"File: {self.filename}", "", self.filename, 0, 1))
         self.tokens.append(

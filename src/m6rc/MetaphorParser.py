@@ -16,6 +16,8 @@ import glob
 import os
 from pathlib import Path
 
+from typing import List, Set, Optional, Union
+
 from Token import Token, TokenType
 from EmbedLexer import EmbedLexer
 from MetaphorLexer import MetaphorLexer
@@ -23,28 +25,28 @@ from ASTNode import ASTNode
 
 class MetaphorParserFileAlreadyUsedError(Exception):
     """Exception raised when a file is used more than once."""
-    def __init__(self, filename, token):
+    def __init__(self, filename: str, token: Token) -> None:
         super().__init__(f"The file '{filename}' has already been used.")
-        self.filename = filename
-        self.token = token
+        self.filename: str = filename
+        self.token: Token = token
 
 
 class MetaphorParserSyntaxError(Exception):
     """Exception generated when there is a syntax error."""
-    def __init__(self, message, filename, line, column, input_text):
+    def __init__(self, message: str, filename: str, line: int, column: int, input_text: str) -> None:
         super().__init__(f"{message}: file: {filename}, line {line}, column {column}, ")
-        self.message = message
-        self.filename = filename
-        self.line = line
-        self.column = column
-        self.input_text = input_text
+        self.message: str = message
+        self.filename: str = filename
+        self.line: int = line
+        self.column: int = column
+        self.input_text: str = input_text
 
 
 class MetaphorParserError(Exception):
     """Exception wrapper generated when there is a syntax error."""
-    def __init__(self, message, errors):
+    def __init__(self, message: str, errors: List[MetaphorParserSyntaxError]) -> None:
         super().__init__(message)
-        self.errors = errors
+        self.errors: List[MetaphorParserSyntaxError] = errors
 
 
 class MetaphorParser:
@@ -56,17 +58,17 @@ class MetaphorParser:
         parse_errors (list): List of syntax errors encountered during parsing.
         lexers (list): Stack of lexers used for parsing multiple files.
     """
-    def __init__(self):
-        self.action_syntax_tree = None
-        self.context_syntax_tree = None
-        self.role_syntax_tree = None
-        self.parse_errors = []
-        self.lexers = []
-        self.previously_seen_files = set()
-        self.search_paths = []
-        self.current_token = None
+    def __init__(self) -> None:
+        self.action_syntax_tree: Optional[ASTNode] = None
+        self.context_syntax_tree: Optional[ASTNode] = None
+        self.role_syntax_tree: Optional[ASTNode] = None
+        self.parse_errors: List[MetaphorParserSyntaxError] = []
+        self.lexers: List[Union[MetaphorLexer, EmbedLexer]] = []
+        self.previously_seen_files: Set[str] = set()
+        self.search_paths: List[str] = []
+        self.current_token: Optional[Token] = None
 
-    def parse(self, filename, search_paths):
+    def parse(self, filename: str, search_paths: List[str]) -> List[Optional[ASTNode]]:
         """
         Parse a file and construct the AST.
 
@@ -74,7 +76,7 @@ class MetaphorParser:
             file (str): The input file to be parsed.
 
         Returns:
-            bool: True if parsing was successful, False otherwise.
+            List: A list of the role, context, and action AST nodes.
         """
         self.search_paths = search_paths
 
@@ -128,7 +130,7 @@ class MetaphorParser:
             ))
             raise(MetaphorParserError("parser error", self.parse_errors)) from e
 
-    def get_next_token(self):
+    def get_next_token(self) -> Token:
         """Get the next token from the active lexer."""
         while self.lexers:
             lexer = self.lexers[-1]

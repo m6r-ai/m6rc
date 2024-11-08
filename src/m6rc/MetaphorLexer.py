@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, List
+from typing import Dict, List, Final
+
 from Token import Token, TokenType
 
 class MetaphorLexer:
@@ -34,7 +35,7 @@ class MetaphorLexer:
     TAB_CHAR = "\t"
 
     # Mapping of keywords to their token types
-    KEYWORDS: Dict[str, TokenType] = {
+    KEYWORDS: Final[Dict[str, TokenType]] = {
         "Action:": TokenType.ACTION,
         "Context:": TokenType.CONTEXT,
         "Embed:": TokenType.EMBED,
@@ -42,7 +43,7 @@ class MetaphorLexer:
         "Role:": TokenType.ROLE
     }
 
-    def __init__(self, input_text: str, filename: str):
+    def __init__(self, input_text: str, filename: str) -> None:
         """
         Initialize the MetaphorLexer.
 
@@ -50,15 +51,15 @@ class MetaphorLexer:
             filename: Name of the file to parse
             search_paths: List of paths to search for included files
         """
-        self.in_text_block = False
-        self.indent_column = 1
-        self.filename = filename
-        self.tokens = []
-        self.current_line = 1
-        self.input = input_text
+        self.in_text_block: bool = False
+        self.indent_column: int = 1
+        self.filename: str = filename
+        self.tokens: List[Token] = []
+        self.current_line: int = 1
+        self.input: str = input_text
         self._tokenize()
 
-    def get_next_token(self):
+    def get_next_token(self) -> Token:
         """Return the next token from the token list."""
         if self.tokens:
             return self.tokens.pop(0)
@@ -73,7 +74,7 @@ class MetaphorLexer:
         if not self.input:
             return
 
-        lines = self.input.splitlines()
+        lines: List[str] = self.input.splitlines()
         for line in lines:
             self._process_line(line)
             self.current_line += 1

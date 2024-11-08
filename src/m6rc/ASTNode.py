@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import List, Optional
+from Token import Token, TokenType
+
 class ASTNode:
     """
     Represents a node in the Abstract Syntax Tree (AST).
@@ -23,20 +26,20 @@ class ASTNode:
         column (int): The column number where the node starts.
         child_nodes (list): The list of child nodes for this node.
     """
-    def __init__(self, token):
-        self.token_type = token.type
-        self.value = token.value
-        self.line = token.line
-        self.column = token.column
-        self.parent_node = None
-        self.child_nodes = []
+    def __init__(self, token: Token) -> None:
+        self.token_type: TokenType = token.type
+        self.value: str = token.value
+        self.line: int = token.line
+        self.column: int = token.column
+        self.parent_node: Optional['ASTNode'] = None
+        self.child_nodes: List['ASTNode'] = []
 
-    def add_child(self, child):
+    def add_child(self, child: 'ASTNode') -> None:
         """Add a child node to this ASTNode."""
         child.parent_node = self
         self.child_nodes.append(child)
 
-    def print_tree(self, level=0):
+    def print_tree(self, level: int = 0) -> None:
         """Print the tree structure of this ASTNode for debugging."""
         print("  " * level + self.value)
         for child in self.child_nodes:

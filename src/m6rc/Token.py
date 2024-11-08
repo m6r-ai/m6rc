@@ -55,6 +55,6 @@ class Token:
     line: int
     column: int
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Token(type={self.type}, value='{self.value}', " \
             f"line={self.line}, column={self.column})"
