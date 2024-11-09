@@ -24,7 +24,7 @@ def test_ast_node_add_child(sample_node):
     """Test adding child nodes"""
     child_token = Token(TokenType.TEXT, "child", "child input", "test.txt", 2, 1)
     child_node = ASTNode(child_token)
-    
+
     sample_node.add_child(child_node)
     assert len(sample_node.child_nodes) == 1
     assert child_node.parent_node == sample_node
@@ -35,7 +35,7 @@ def test_ast_node_print_tree(sample_node, capsys):
     child_token = Token(TokenType.TEXT, "child", "child input", "test.txt", 2, 1)
     child_node = ASTNode(child_token)
     sample_node.add_child(child_node)
-    
+
     sample_node.print_tree()
     captured = capsys.readouterr()
     assert "test\n  child\n" in captured.out

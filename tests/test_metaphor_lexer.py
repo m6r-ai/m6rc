@@ -53,7 +53,7 @@ def test_keyword_detection(basic_lexer):
         tokens.append(token)
         if token.type == TokenType.END_OF_FILE:
             break
-    
+
     keyword_tokens = [t for t in tokens if t.type in (TokenType.ROLE, TokenType.CONTEXT, TokenType.ACTION)]
     assert len(keyword_tokens) == 4  # 1 Role, 2 Context (one nested), 1 Action
     assert keyword_tokens[0].type == TokenType.ROLE
@@ -68,7 +68,7 @@ def test_indentation_handling():
     First block
     Still first block
     Back at first"""  # All at same indentation level
-    
+
     lexer = MetaphorLexer(input_text, "test.txt")
     tokens = []
     while True:
@@ -84,7 +84,7 @@ def test_indentation_handling():
     assert len(indent_tokens) == 1
     assert indent_tokens[0].line == 2  # First indent
     assert len(outdent_tokens) == 1    # One outdent at the end
-    
+
     # Check that all text tokens maintain the same indentation
     text_tokens = [t for t in tokens if t.type == TokenType.TEXT]
     assert all(t.column == text_tokens[0].column for t in text_tokens)
@@ -94,7 +94,7 @@ def test_indentation_handling():
     First level
 Context: Inner
     Second level"""
-    
+
     lexer = MetaphorLexer(nested_input, "test.txt")
     tokens = []
     while True:
@@ -118,7 +118,7 @@ def test_bad_indentation():
         tokens.append(token)
         if token.type == TokenType.END_OF_FILE:
             break
-    
+
     bad_indent_tokens = [t for t in tokens if t.type == TokenType.BAD_INDENT]
     assert len(bad_indent_tokens) == 1
     assert bad_indent_tokens[0].column == 4
@@ -135,7 +135,7 @@ def test_bad_outdentation():
         tokens.append(token)
         if token.type == TokenType.END_OF_FILE:
             break
-    
+
     bad_outdent_tokens = [t for t in tokens if t.type == TokenType.BAD_OUTDENT]
     assert len(bad_outdent_tokens) == 1
     assert bad_outdent_tokens[0].column == 6
@@ -150,7 +150,7 @@ def test_keyword_text_handling():
         tokens.append(token)
         if token.type == TokenType.END_OF_FILE:
             break
-    
+
     assert tokens[0].type == TokenType.ROLE
     assert tokens[1].type == TokenType.KEYWORD_TEXT
     assert tokens[1].value == "Test Description"
@@ -168,7 +168,7 @@ def test_text_block_continuation():
         tokens.append(token)
         if token.type == TokenType.END_OF_FILE:
             break
-    
+
     text_tokens = [t for t in tokens if t.type == TokenType.TEXT]
     assert len(text_tokens) == 3
     assert all(t.column == text_tokens[0].column for t in text_tokens)
@@ -185,7 +185,7 @@ def test_empty_lines():
         tokens.append(token)
         if token.type == TokenType.END_OF_FILE:
             break
-    
+
     text_tokens = [t for t in tokens if t.type == TokenType.TEXT]
     assert len(text_tokens) == 1
     assert text_tokens[0].value == "Text after empty line"
@@ -201,7 +201,7 @@ Context: First
     Back to first
 Action: Do
     Steps to take"""
-    
+
     lexer = MetaphorLexer(input_text, "test.txt")
     tokens = []
     while True:
@@ -209,7 +209,7 @@ Action: Do
         tokens.append(token)
         if token.type == TokenType.END_OF_FILE:
             break
-    
+
     # Verify token sequence
     token_types = [t.type for t in tokens if t.type not in (TokenType.INDENT, TokenType.OUTDENT)]
     assert TokenType.ROLE in token_types

@@ -29,7 +29,7 @@ def test_embed_lexer_tokenization(sample_input):
         tokens.append(token)
         if token.type == TokenType.END_OF_FILE:
             break
-    
+
     assert len(tokens) > 0
     assert tokens[0].type == TokenType.TEXT
     assert tokens[0].value.startswith("File:")
@@ -39,14 +39,14 @@ def test_embed_lexer():
     """Test the EmbedLexer's token generation"""
     input_text = "Test content"
     lexer = EmbedLexer(input_text, "test.txt")
-    
+
     tokens = []
     while True:
         token = lexer.get_next_token()
         tokens.append(token)
         if token.type == TokenType.END_OF_FILE:
             break
-    
+
     # Should generate these tokens:
     # 1. File: test.txt
     # 2. ```plaintext
@@ -63,11 +63,11 @@ def test_embed_lexer():
 def test_empty_lexer():
     """Test behavior when all tokens have been consumed"""
     lexer = EmbedLexer("", "test.txt")
-    
+
     # First consume all regular tokens
     while lexer.tokens:
         lexer.get_next_token()
-        
+
     # Now get another token when tokens list is empty
     token = lexer.get_next_token()
     assert token.type == TokenType.END_OF_FILE
