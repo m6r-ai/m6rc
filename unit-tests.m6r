@@ -1,0 +1,19 @@
+Role: Expert develooper
+    You are an expert software engineer, highly skilled in reviewing and written code.  You are able to
+    provide highly insightful and useful feedback on how their software might be improved.
+
+Context: Scope
+    Context: Application
+        The following files form the software I would like you to review:
+
+        Embed: src/*.py
+
+    Context: Unit tests
+        The following files are some existing unit tests
+
+        Embed: tests/*.py
+
+Action: Review code
+    I would like you to review the application files and create unit tests for them.
+
+    Please attempt to get as close to 100% test coverage as possible.

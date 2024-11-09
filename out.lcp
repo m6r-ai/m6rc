@@ -1,0 +1,1662 @@
+The following is written in a language called Metaphor.
+
+Metaphor has the structure of a document tree with branches and leaves being 
+prefixed by the keywords "Role:", "Context:" or "Action:".
+
+These have an optional section name that will immediately follow them on the same line.  
+If this is missing then the section name is not defined.
+
+After a keyword line the text may be indented to include an optional block of descriptive 
+text that explains the purpose of the block.  A block may also include one or more optional 
+child blocks inside them and that further clarify their parent block.
+
+The indentation of the blocks indicates where in the tree the pieces appear.  For example a 
+"Context:" indented by 8 spaces is a child of the context above it that is indented by 4 
+spaces.  One indented 12 spaces would be a child of the block above it that is indented by 
+8 spaces.
+
+If a "Role:" block exists then this is the role you should fulfil.
+Please review all of the "Context:" blocks to understand what is required and then 
+process all of the items included in the "Action:" section.
+
+When you process the actions please carefully ensure you do all of them accurately.  These 
+need to fulfil all the details described in the "Context:".  Ensure you complete all the 
+elements and do not include any placeholders.
+
+Role: Expert develooper
+    You are an expert software engineer, highly skilled in reviewing and written code.  You are able to
+    provide highly insightful and useful feedback on how their software might be improved.
+Context: Scope
+    Context: Application
+        The following files form the software I would like you to review:
+        File: src/ast_node.py
+        ```python
+        # Copyright 2024 M6R Ltd.
+        #
+        # Licensed under the Apache License, Version 2.0 (the "License");
+        # you may not use this file except in compliance with the License.
+        # You may obtain a copy of the License at
+        #
+        #     http://www.apache.org/licenses/LICENSE-2.0
+        #
+        # Unless required by applicable law or agreed to in writing, software
+        # distributed under the License is distributed on an "AS IS" BASIS,
+        # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        # See the License for the specific language governing permissions and
+        # limitations under the License.
+        
+        from typing import List, Optional
+        
+        from metaphor_token import Token, TokenType
+        
+        class ASTNode:
+            """
+            Represents a node in the Abstract Syntax Tree (AST).
+            
+            Attributes:
+                token_type (TokenType): The type of the token the node represents.
+                value (str): The value associated with the node.
+                line (int): The line number where the node is located.
+                column (int): The column number where the node starts.
+                child_nodes (list): The list of child nodes for this node.
+            """
+            def __init__(self, token: Token) -> None:
+                self.token_type: TokenType = token.type
+                self.value: str = token.value
+                self.line: int = token.line
+                self.column: int = token.column
+                self.parent_node: Optional['ASTNode'] = None
+                self.child_nodes: List['ASTNode'] = []
+        
+            def add_child(self, child: 'ASTNode') -> None:
+                """Add a child node to this ASTNode."""
+                child.parent_node = self
+                self.child_nodes.append(child)
+        
+            def print_tree(self, level: int = 0) -> None:
+                """Print the tree structure of this ASTNode for debugging."""
+                print("  " * level + self.value)
+                for child in self.child_nodes:
+                    child.print_tree(level + 1)
+        ```
+        File: src/metaphor_token.py
+        ```python
+        # Copyright 2024 M6R Ltd.
+        #
+        # Licensed under the Apache License, Version 2.0 (the "License");
+        # you may not use this file except in compliance with the License.
+        # You may obtain a copy of the License at
+        #
+        #     http://www.apache.org/licenses/LICENSE-2.0
+        #
+        # Unless required by applicable law or agreed to in writing, software
+        # distributed under the License is distributed on an "AS IS" BASIS,
+        # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        # See the License for the specific language governing permissions and
+        # limitations under the License.
+        
+        from dataclasses import dataclass
+        from enum import IntEnum
+        
+        class TokenType(IntEnum):
+            """
+            Enum-like class representing different types of tokens in the source file.
+            """
+            NONE: int = 0
+            INDENT: int = 1
+            OUTDENT: int = 2
+            INCLUDE: int = 3
+            EMBED: int = 4
+            KEYWORD_TEXT: int = 5
+            TEXT: int = 6
+            ACTION: int = 7
+            CONTEXT: int = 8
+            ROLE: int = 9
+            BAD_INDENT: int = 10
+            BAD_OUTDENT: int = 11
+            TAB: int = 12
+            END_OF_FILE: int = 13
+        
+        
+        @dataclass(frozen=True)
+        class Token:
+            """
+            Represents a token in the input stream.
+        
+            Attributes:
+                type (TokenType): The type of the token (e.g., TEXT, ACTION).
+                value (str): The actual string value of the token.
+                input (str): The entire line of input where the token appears.
+                filename (str): The file where the token was read from.
+                line (int): The line number in the file where the token is located.
+                column (int): The column number where the token starts.
+            """
+            type: TokenType
+            value: str
+            input: str
+            filename: str
+            line: int
+            column: int
+        
+            def __str__(self) -> str:
+                return f"Token(type=TokenType.{self.type.name}, value='{self.value}', " \
+                       f"line={self.line}, column={self.column})"
+        ```
+        File: src/m6rc.py
+        ```python
+        # Copyright 2024 M6R Ltd.
+        #
+        # Licensed under the Apache License, Version 2.0 (the "License");
+        # you may not use this file except in compliance with the License.
+        # You may obtain a copy of the License at
+        #
+        #     http://www.apache.org/licenses/LICENSE-2.0
+        #
+        # Unless required by applicable law or agreed to in writing, software
+        # distributed under the License is distributed on an "AS IS" BASIS,
+        # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        # See the License for the specific language governing permissions and
+        # limitations under the License.
+        
+        import os
+        import sys
+        import argparse
+        from pathlib import Path
+        
+        from metaphor_token import TokenType
+        from metaphor_parser import MetaphorParser, MetaphorParserError
+        
+        
+        def recurse(node, depth, out):
+            """
+            Recursively traverse the AST and output formatted sections.
+        
+            Args:
+                node (ASTNode): The current AST node being processed.
+                depth (integer): The current tree depth.
+                out (file): The output stream to write to.
+            """
+            indent = " " * (depth * 4)
+            keyword = ""
+        
+            if node.token_type == TokenType.TEXT:
+                out.write(f"{indent}{node.value}\n")
+                return
+        
+            if node.token_type == TokenType.ACTION:
+                keyword = "Action:"
+            elif node.token_type == TokenType.CONTEXT:
+                keyword = "Context:"
+            elif node.token_type == TokenType.ROLE:
+                keyword = "Role:"
+        
+            if node.token_type in (TokenType.ACTION, TokenType.CONTEXT, TokenType.ROLE):
+                if node.child_nodes:
+                    child = node.child_nodes[0]
+                    if child.token_type == TokenType.KEYWORD_TEXT:
+                        out.write(f"{indent}{keyword} {child.value}\n")
+                    else:
+                        out.write(f"{indent}{keyword}\n")
+                else:
+                    out.write(f"{indent}{keyword}\n")
+        
+            for child in node.child_nodes:
+                recurse(child, depth + 1, out)
+        
+        
+        def main():
+            """Main entry point for the program."""
+            parser = argparse.ArgumentParser()
+            parser.add_argument("input_file", help="Input file to parse")
+            parser.add_argument("-o", "--outputFile", help="Output file")
+            parser.add_argument("-I", "--include", action="append", help="Specify an include path")
+        
+            args = parser.parse_args()
+        
+            output_file = args.outputFile
+            input_file = args.input_file
+        
+            if not Path(input_file).exists():
+                print(f"Error: File {input_file} not found", file=sys.stderr)
+                return 1
+        
+            search_paths = []
+            if args.include:
+                for path in args.include:
+                    if not os.path.isdir(path):
+                        print(f"Error: {path}: is not a valid directory", file=sys.stderr)
+                        return 1
+        
+                    search_paths.append(path)
+        
+            output_stream = sys.stdout
+            if output_file:
+                try:
+                    output_stream = open(output_file, 'w', encoding='utf-8')
+                except OSError as e:
+                    print(f"Error: Could not open output file {output_file}: {e}", file=sys.stderr)
+                    return 1
+        
+            metaphor_parser = MetaphorParser()
+            try:
+                syntax_tree = metaphor_parser.parse(input_file, search_paths)
+            except MetaphorParserError as e:
+                for error in e.errors:
+                    caret = ""
+                    for _ in range(1, error.column):
+                        caret += " "
+        
+                    error_message = f"{error.message}: line {error.line}, column {error.column}, " \
+                        f"file {error.filename}\n{caret}|\n{caret}v\n{error.input_text}"
+        
+                    print(f"----------------\n{error_message}", file=sys.stderr)
+        
+                print("----------------\n", file=sys.stderr)
+                return -1
+        
+            # Provide a default summary of Metaphor.
+            output_stream.write("The following is written in a language called Metaphor.\n\n")
+            output_stream.write("Metaphor has the structure of a document tree with branches and leaves being \n")
+            output_stream.write("prefixed by the keywords \"Role:\", \"Context:\" or \"Action:\".\n\n")
+            output_stream.write("These have an optional section name that will immediately follow them on the same line.  \n")
+            output_stream.write("If this is missing then the section name is not defined.\n\n")
+            output_stream.write("After a keyword line the text may be indented to include an optional block of descriptive \n")
+            output_stream.write("text that explains the purpose of the block.  A block may also include one or more optional \n")
+            output_stream.write("child blocks inside them and that further clarify their parent block.\n\n")
+            output_stream.write("The indentation of the blocks indicates where in the tree the pieces appear.  For example a \n")
+            output_stream.write("\"Context:\" indented by 8 spaces is a child of the context above it that is indented by 4 \n")
+            output_stream.write("spaces.  One indented 12 spaces would be a child of the block above it that is indented by \n")
+            output_stream.write("8 spaces.\n\n")
+            output_stream.write("If a \"Role:\" block exists then this is the role you should fulfil.\n")
+            output_stream.write("Please review all of the \"Context:\" blocks to understand what is required and then \n")
+            output_stream.write("process all of the items included in the \"Action:\" section.\n\n")
+            output_stream.write("When you process the actions please carefully ensure you do all of them accurately.  These \n")
+            output_stream.write("need to fulfil all the details described in the \"Context:\".  Ensure you complete all the \n")
+            output_stream.write("elements and do not include any placeholders.\n\n")
+        
+            for block in syntax_tree:
+                if block is not None:
+                    recurse(block, 0, output_stream)
+        
+            if output_file:
+                output_stream.close()
+        
+            return 0
+        
+        
+        if __name__ == "__main__":
+            sys.exit(main())
+        ```
+        File: src/metaphor_lexer.py
+        ```python
+        # Copyright 2024 M6R Ltd.
+        #
+        # Licensed under the Apache License, Version 2.0 (the "License");
+        # you may not use this file except in compliance with the License.
+        # You may obtain a copy of the License at
+        #
+        #     http://www.apache.org/licenses/LICENSE-2.0
+        #
+        # Unless required by applicable law or agreed to in writing, software
+        # distributed under the License is distributed on an "AS IS" BASIS,
+        # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        # See the License for the specific language governing permissions and
+        # limitations under the License.
+        
+        from typing import Dict, List, Final
+        
+        from metaphor_token import Token, TokenType
+        
+        class MetaphorLexer:
+            """
+            Lexer for handling the Metaphor language with its specific syntax.
+        
+            The Metaphor language consists of:
+            - Keywords (Action:, Context:, Role:, etc)
+            - Indented blocks
+            - Text content
+            - Include/Embed directives
+        
+            This lexer handles proper indentation, text block detection, and keyword parsing.
+            """
+        
+            # Constants for language elements
+            INDENT_SPACES = 4
+        
+            # Mapping of keywords to their token types
+            KEYWORDS: Final[Dict[str, TokenType]] = {
+                "Action:": TokenType.ACTION,
+                "Context:": TokenType.CONTEXT,
+                "Embed:": TokenType.EMBED,
+                "Include:": TokenType.INCLUDE,
+                "Role:": TokenType.ROLE
+            }
+        
+            def __init__(self, input_text: str, filename: str) -> None:
+                """
+                Initialize the MetaphorLexer.
+        
+                Args:
+                    filename: Name of the file to parse
+                    search_paths: List of paths to search for included files
+                """
+                self.in_text_block: bool = False
+                self.indent_column: int = 1
+                self.filename: str = filename
+                self.tokens: List[Token] = []
+                self.current_line: int = 1
+                self.input: str = input_text
+                self._tokenize()
+        
+            def get_next_token(self) -> Token:
+                """Return the next token from the token list."""
+                if self.tokens:
+                    return self.tokens.pop(0)
+        
+                return Token(TokenType.END_OF_FILE, "", "", self.filename, self.current_line, 1)
+        
+            def _tokenize(self) -> None:
+                """
+                Tokenize the input file into appropriate tokens.
+                Processes each line for indentation, keywords, and text content.
+                """
+                if not self.input:
+                    return
+        
+                lines: List[str] = self.input.splitlines()
+                for line in lines:
+                    self._process_line(line)
+                    self.current_line += 1
+        
+                # Handle remaining outdents at end of file
+                self._handle_final_outdents()
+        
+            def _handle_final_outdents(self) -> None:
+                """Handle any remaining outdents needed at the end of file."""
+                while self.indent_column > 1:
+                    self.tokens.append(
+                        Token(
+                            type=TokenType.OUTDENT,
+                            value="[Outdent]",
+                            input="",
+                            filename=self.filename,
+                            line=self.current_line,
+                            column=self.indent_column
+                        )
+                    )
+                    self.indent_column -= self.INDENT_SPACES
+        
+            def _process_line(self, line: str) -> None:
+                """
+                Process a single line of input.
+        
+                Args:
+                    line: The line to process
+                """
+                stripped_line = line.lstrip(' ')
+                start_column = len(line) - len(stripped_line) + 1
+        
+                if not stripped_line:
+                    return
+        
+                # Is this line a comment?
+                if stripped_line.startswith('#'):
+                    return
+        
+                # Does this line start with a tab character?
+                if stripped_line.startswith('\t'):
+                    self._handle_tab_character(stripped_line, start_column)
+                    stripped_line = stripped_line[1:]
+        
+                self._handle_line_content(line, stripped_line, start_column)
+        
+            def _handle_tab_character(self, line: str, column: int) -> None:
+                """
+                Handle tab characters in the input.
+        
+                Args:
+                    line: The line to check
+                    column: The current column number
+        
+                Returns:
+                    True if a tab was handled, False otherwise
+                """
+                self.tokens.append(
+                    Token(
+                        type=TokenType.TAB,
+                        value="[Tab]",
+                        input=line,
+                        filename=self.filename,
+                        line=self.current_line,
+                        column=column
+                    )
+                )
+        
+            def _handle_line_content(self, full_line: str, stripped_line: str, start_column: int) -> None:
+                """
+                Process the content of a line after initial cleaning.
+        
+                Args:
+                    full_line: The complete line
+                    stripped_line: The line with leading whitespace removed
+                    start_column: The starting column of the content
+                """
+                words = stripped_line.split(maxsplit=1)
+                first_word = words[0].capitalize()
+        
+                if first_word in self.KEYWORDS:
+                    self._handle_keyword_line(full_line, words, first_word, start_column)
+                else:
+                    self._handle_text_line(full_line, start_column)
+        
+            def _handle_keyword_line(self, line: str, words: List[str], keyword: str, start_column: int) -> None:
+                """
+                Handle a line that starts with a keyword.
+        
+                Args:
+                    line: The complete line
+                    words: The line split into words
+                    keyword: The keyword found
+                    start_column: The starting column of the content
+                """
+                self._process_indentation(line, start_column)
+        
+                # Create keyword token
+                self.tokens.append(
+                    Token(
+                        type=self.KEYWORDS[keyword],
+                        value=keyword,
+                        input=line,
+                        filename=self.filename,
+                        line=self.current_line,
+                        column=start_column
+                    )
+                )
+        
+                # Handle any text after the keyword
+                if len(words) > 1:
+                    self.tokens.append(
+                        Token(
+                            type=TokenType.KEYWORD_TEXT,
+                            value=words[1],
+                            input=line,
+                            filename=self.filename,
+                            line=self.current_line,
+                            column=start_column + len(keyword) + 1
+                        )
+                    )
+        
+                self.in_text_block = False
+        
+            def _handle_text_line(self, line: str, start_column: int) -> None:
+                """
+                Handle a line that contains text content.
+        
+                Args:
+                    line: The line to process
+                    start_column: The starting column of the content
+                """
+                # Adjust indentation for continued text blocks
+                if self.in_text_block:
+                    if start_column > self.indent_column:
+                        start_column = self.indent_column
+                    elif start_column < self.indent_column:
+                        self._process_indentation(line, start_column)
+                else:
+                    self._process_indentation(line, start_column)
+        
+                text_content = line[start_column - 1:]
+                if text_content:
+                    self.tokens.append(
+                        Token(
+                            type=TokenType.TEXT,
+                            value=text_content,
+                            input=line,
+                            filename=self.filename,
+                            line=self.current_line,
+                            column=start_column
+                        )
+                    )
+                    self.in_text_block = True
+        
+            def _process_indentation(self, line: str, start_column: int) -> None:
+                """
+                Process the indentation of the current line.
+        
+                Args:
+                    line: The current line
+                    start_column: The starting column of the content
+                """
+                if not line:
+                    return
+        
+                indent_offset = start_column - self.indent_column
+        
+                if indent_offset > 0:
+                    self._handle_indent(line, start_column, indent_offset)
+                elif indent_offset < 0:
+                    self._handle_outdent(line, start_column, indent_offset)
+        
+            def _handle_indent(self, line: str, start_column: int, indent_offset: int) -> None:
+                """
+                Handle an increase in indentation.
+        
+                Args:
+                    line: The current line
+                    start_column: The starting column of the content
+                    indent_offset: The change in indentation
+                """
+                if indent_offset % self.INDENT_SPACES != 0:
+                    self.tokens.append(
+                        Token(
+                            type=TokenType.BAD_INDENT,
+                            value="[Bad Indent]",
+                            input=line,
+                            filename=self.filename,
+                            line=self.current_line,
+                            column=start_column
+                        )
+                    )
+                    return
+        
+                while indent_offset > 0:
+                    self.tokens.append(
+                        Token(
+                            type=TokenType.INDENT,
+                            value="[Indent]",
+                            input=line,
+                            filename=self.filename,
+                            line=self.current_line,
+                            column=start_column
+                        )
+                    )
+                    indent_offset -= self.INDENT_SPACES
+        
+                self.indent_column = start_column
+        
+            def _handle_outdent(self, line: str, start_column: int, indent_offset: int) -> None:
+                """
+                Handle a decrease in indentation.
+        
+                Args:
+                    line: The current line
+                    start_column: The starting column of the content
+                    indent_offset: The change in indentation
+                """
+                if abs(indent_offset) % self.INDENT_SPACES != 0:
+                    self.tokens.append(
+                        Token(
+                            type=TokenType.BAD_OUTDENT,
+                            value="[Bad Outdent]",
+                            input=line,
+                            filename=self.filename,
+                            line=self.current_line,
+                            column=start_column
+                        )
+                    )
+                    return
+        
+                while indent_offset < 0:
+                    self.tokens.append(
+                        Token(
+                            type=TokenType.OUTDENT,
+                            value="[Outdent]",
+                            input=line,
+                            filename=self.filename,
+                            line=self.current_line,
+                            column=start_column
+                        )
+                    )
+                    indent_offset += self.INDENT_SPACES
+        
+                self.indent_column = start_column
+        ```
+        File: src/metaphor_parser.py
+        ```python
+        # Copyright 2024 M6R Ltd.
+        #
+        # Licensed under the Apache License, Version 2.0 (the "License");
+        # you may not use this file except in compliance with the License.
+        # You may obtain a copy of the License at
+        #
+        #     http://www.apache.org/licenses/LICENSE-2.0
+        #
+        # Unless required by applicable law or agreed to in writing, software
+        # distributed under the License is distributed on an "AS IS" BASIS,
+        # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        # See the License for the specific language governing permissions and
+        # limitations under the License.
+        
+        import glob
+        import os
+        from pathlib import Path
+        
+        from typing import List, Set, Optional, Union
+        
+        from metaphor_token import Token, TokenType
+        from embed_lexer import EmbedLexer
+        from metaphor_lexer import MetaphorLexer
+        from ast_node import ASTNode
+        
+        class MetaphorParserFileAlreadyUsedError(Exception):
+            """Exception raised when a file is used more than once."""
+            def __init__(self, filename: str, token: Token) -> None:
+                super().__init__(f"The file '{filename}' has already been used.")
+                self.filename: str = filename
+                self.token: Token = token
+        
+        
+        class MetaphorParserSyntaxError(Exception):
+            """Exception generated when there is a syntax error."""
+            def __init__(self, message: str, filename: str, line: int, column: int, input_text: str) -> None:
+                super().__init__(f"{message}: file: {filename}, line {line}, column {column}, ")
+                self.message: str = message
+                self.filename: str = filename
+                self.line: int = line
+                self.column: int = column
+                self.input_text: str = input_text
+        
+        
+        class MetaphorParserError(Exception):
+            """Exception wrapper generated when there is a syntax error."""
+            def __init__(self, message: str, errors: List[MetaphorParserSyntaxError]) -> None:
+                super().__init__(message)
+                self.errors: List[MetaphorParserSyntaxError] = errors
+        
+        
+        class MetaphorParser:
+            """
+            Parser class to process tokens and build an Abstract Syntax Tree (AST).
+        
+            Attributes:
+                syntax_tree (ASTNode): The root node of the AST being constructed.
+                parse_errors (list): List of syntax errors encountered during parsing.
+                lexers (list): Stack of lexers used for parsing multiple files.
+            """
+            def __init__(self) -> None:
+                self.action_syntax_tree: Optional[ASTNode] = None
+                self.context_syntax_tree: Optional[ASTNode] = None
+                self.role_syntax_tree: Optional[ASTNode] = None
+                self.parse_errors: List[MetaphorParserSyntaxError] = []
+                self.lexers: List[Union[MetaphorLexer, EmbedLexer]] = []
+                self.previously_seen_files: Set[str] = set()
+                self.search_paths: List[str] = []
+                self.current_token: Optional[Token] = None
+        
+            def parse(self, filename: str, search_paths: List[str]) -> List[Optional[ASTNode]]:
+                """
+                Parse a file and construct the AST.
+        
+                Args:
+                    file (str): The input file to be parsed.
+        
+                Returns:
+                    List: A list of the role, context, and action AST nodes.
+                """
+                self.search_paths = search_paths
+        
+                try:
+                    self._check_file_not_loaded(filename)
+                    input_text = self._read_file(filename)
+                    self.lexers.append(MetaphorLexer(input_text, filename))
+        
+                    while True:
+                        token = self.get_next_token()
+                        if token.type == TokenType.ACTION:
+                            if self.action_syntax_tree:
+                                self._record_syntax_error(token, "'Action' already defined")
+        
+                            self.action_syntax_tree = self._parse_action(token)
+                        elif token.type == TokenType.CONTEXT:
+                            if self.context_syntax_tree:
+                                self._record_syntax_error(token, "'Context' already defined")
+        
+                            self.context_syntax_tree = self._parse_context(token)
+                        elif token.type == TokenType.ROLE:
+                            if self.role_syntax_tree:
+                                self._record_syntax_error(token, "'Role' already defined")
+        
+                            self.role_syntax_tree = self._parse_role(token)
+                        elif token.type == TokenType.END_OF_FILE:
+                            if self.parse_errors:
+                                raise(MetaphorParserError("parser error", self.parse_errors))
+        
+                            return [self.role_syntax_tree, self.context_syntax_tree, self.action_syntax_tree]
+                        else:
+                            self._record_syntax_error(token, f"Unexpected token: {token.value} at top level")
+                except FileNotFoundError as e:
+                    err_token = self.current_token
+                    if not err_token:
+                        self.parse_errors.append(MetaphorParserSyntaxError(
+                            f"{e}", "", 0, 0, ""
+                        ))
+                    else:
+                        self.parse_errors.append(MetaphorParserSyntaxError(
+                            f"{e}", err_token.filename, err_token.line, err_token.column, err_token.input
+                        ))
+                    raise(MetaphorParserError("parser error", self.parse_errors)) from e
+                except MetaphorParserFileAlreadyUsedError as e:
+                    self.parse_errors.append(MetaphorParserSyntaxError(
+                        f"The file '{e.filename}' has already been used",
+                        e.token.filename,
+                        e.token.line,
+                        e.token.column,
+                        e.token.input
+                    ))
+                    raise(MetaphorParserError("parser error", self.parse_errors)) from e
+        
+            def get_next_token(self) -> Token:
+                """Get the next token from the active lexer."""
+                while self.lexers:
+                    lexer = self.lexers[-1]
+                    token = lexer.get_next_token()
+                    self.current_token = token
+        
+                    if token.type == TokenType.INCLUDE:
+                        self._parse_include()
+                    elif token.type == TokenType.EMBED:
+                        self._parse_embed()
+                    elif token.type == TokenType.END_OF_FILE:
+                        self.lexers.pop()
+                    else:
+                        return token
+        
+                return Token(TokenType.END_OF_FILE, "", "", "", 0, 0)
+        
+            def _record_syntax_error(self, token, message):
+                """Raise a syntax error and add it to the error list."""
+                error = MetaphorParserSyntaxError(
+                    message, token.filename, token.line, token.column, token.input
+                )
+                self.parse_errors.append(error)
+        
+            def _find_file_path(self, filename):
+                """Try to find a valid path for a file, given all the search path options"""
+                if Path(filename).exists():
+                    return filename
+        
+                # If we don't have an absolute path then we can try search paths.
+                if not os.path.isabs(filename):
+                    for path in self.search_paths:
+                        try_name = os.path.join(path, filename)
+                        if Path(try_name).exists():
+                            return try_name
+        
+                raise FileNotFoundError(f"File not found: {filename}")
+        
+            def _read_file(self, filename):
+                """Read file content into memory."""
+                try:
+                    with open(filename, 'r', encoding='utf-8') as file:
+                        return file.read()
+                except FileNotFoundError as e:
+                    raise FileNotFoundError(f"File not found: {filename}") from e
+                except PermissionError as e:
+                    raise FileNotFoundError(f"You do not have permission to access: {filename}") from e
+                except IsADirectoryError as e:
+                    raise FileNotFoundError(f"Is a directory: {filename}") from e
+                except OSError as e:
+                    raise FileNotFoundError(f"OS error: {e}") from e
+        
+            def _check_file_not_loaded(self, filename):
+                """Check we have not already loaded a file."""
+                canonical_filename = os.path.realpath(filename)
+                if canonical_filename in self.previously_seen_files:
+                    raise MetaphorParserFileAlreadyUsedError(filename, self.current_token)
+        
+                self.previously_seen_files.add(canonical_filename)
+        
+            def _parse_keyword_text(self, token):
+                """Parse keyword text."""
+                return ASTNode(token)
+        
+            def _parse_text(self, token):
+                """Parse a text block."""
+                return ASTNode(token)
+        
+            def _parse_action(self, token):
+                """Parse an action block and construct its AST node."""
+                action_node = ASTNode(token)
+        
+                seen_token_type = TokenType.NONE
+        
+                init_token = self.get_next_token()
+                if init_token.type == TokenType.KEYWORD_TEXT:
+                    action_node.add_child(self._parse_keyword_text(init_token))
+                    indent_token = self.get_next_token()
+                    if indent_token.type != TokenType.INDENT:
+                        self._record_syntax_error(
+                            token,
+                            "Expected indent after keyword description for 'Action' block"
+                        )
+                elif init_token.type != TokenType.INDENT:
+                    self._record_syntax_error(token, "Expected description or indent for 'Action' block")
+        
+                while True:
+                    token = self.get_next_token()
+                    if token.type == TokenType.TEXT:
+                        if seen_token_type != TokenType.NONE:
+                            self._record_syntax_error(token, "Text must come first in an 'Action' block")
+        
+                        action_node.add_child(self._parse_text(token))
+                    elif token.type == TokenType.OUTDENT or token.type == TokenType.END_OF_FILE:
+                        return action_node
+                    else:
+                        self._record_syntax_error(
+                            token,
+                            f"Unexpected token: {token.value} in 'Action' block"
+                        )
+        
+            def _parse_context(self, token):
+                """Parse a Context block."""
+                context_node = ASTNode(token)
+        
+                seen_token_type = TokenType.NONE
+        
+                init_token = self.get_next_token()
+                if init_token.type == TokenType.KEYWORD_TEXT:
+                    context_node.add_child(self._parse_keyword_text(init_token))
+                    indent_token = self.get_next_token()
+                    if indent_token.type != TokenType.INDENT:
+                        self._record_syntax_error(
+                            token,
+                            "Expected indent after keyword description for 'Context' block"
+                        )
+                elif init_token.type != TokenType.INDENT:
+                    self._record_syntax_error(token, "Expected description or indent for 'Context' block")
+        
+                while True:
+                    token = self.get_next_token()
+                    if token.type == TokenType.TEXT:
+                        if seen_token_type != TokenType.NONE:
+                            self._record_syntax_error(token, "Text must come first in a 'Context' block")
+        
+                        context_node.add_child(self._parse_text(token))
+                    elif token.type == TokenType.CONTEXT:
+                        context_node.add_child(self._parse_context(token))
+                        seen_token_type = TokenType.CONTEXT
+                    elif token.type == TokenType.OUTDENT or token.type == TokenType.END_OF_FILE:
+                        return context_node
+                    else:
+                        self._record_syntax_error(token, f"Unexpected token: {token.value} in 'Context' block")
+        
+            def _parse_role(self, token):
+                """Parse a Role block."""
+                role_node = ASTNode(token)
+        
+                init_token = self.get_next_token()
+                if init_token.type == TokenType.KEYWORD_TEXT:
+                    role_node.add_child(self._parse_keyword_text(init_token))
+                    indent_token = self.get_next_token()
+                    if indent_token.type != TokenType.INDENT:
+                        self._record_syntax_error(
+                            token,
+                            "Expected indent after keyword description for 'Role' block"
+                        )
+                elif init_token.type != TokenType.INDENT:
+                    self._record_syntax_error(token, "Expected description or indent for 'Role' block")
+        
+                while True:
+                    token = self.get_next_token()
+                    if token.type == TokenType.TEXT:
+                        role_node.add_child(self._parse_text(token))
+                    elif token.type == TokenType.OUTDENT or token.type == TokenType.END_OF_FILE:
+                        return role_node
+                    else:
+                        self._record_syntax_error(
+                            token,
+                            f"Unexpected token: {token.value} in 'Role' block"
+                        )
+        
+            def _parse_include(self):
+                """Parse an Include block and load the included file."""
+                token_next = self.get_next_token()
+                if token_next.type != TokenType.KEYWORD_TEXT:
+                    self._record_syntax_error(token_next, "Expected file name for 'Include'")
+                    return
+        
+                filename = token_next.value
+                self._check_file_not_loaded(filename)
+                try_file = self._find_file_path(filename)
+                input_text = self._read_file(try_file)
+                self.lexers.append(MetaphorLexer(input_text, try_file))
+        
+            def _parse_embed(self):
+                """Parse an Embed block and load the embedded file."""
+                token_next = self.get_next_token()
+                if token_next.type != TokenType.KEYWORD_TEXT:
+                    self._record_syntax_error(token_next, "Expected file name or wildcard match for 'Embed'")
+                    return
+        
+                recurse = False
+                match = token_next.value
+                if "**/" in match:
+                    recurse = True
+        
+                files = glob.glob(match, recursive=recurse)
+                if not files:
+                    self._record_syntax_error(token_next, f"{match} does not match any files for 'Embed'")
+                    return
+        
+                for file in files:
+                    input_text = self._read_file(file)
+                    self.lexers.append(EmbedLexer(input_text, file))
+        ```
+        File: src/embed_lexer.py
+        ```python
+        # Copyright 2024 M6R Ltd.
+        #
+        # Licensed under the Apache License, Version 2.0 (the "License");
+        # you may not use this file except in compliance with the License.
+        # You may obtain a copy of the License at
+        #
+        #     http://www.apache.org/licenses/LICENSE-2.0
+        #
+        # Unless required by applicable law or agreed to in writing, software
+        # distributed under the License is distributed on an "AS IS" BASIS,
+        # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        # See the License for the specific language governing permissions and
+        # limitations under the License.
+        
+        from typing import Dict, List
+        
+        from metaphor_token import Token, TokenType
+        
+        class EmbedLexer:
+            """
+            Lexer for handling embedded content like code blocks.
+            """
+        
+            file_exts: Dict[str, str] = {
+                "bash": "bash",
+                "c": "c",
+                "clj": "clojure",
+                "cpp": "cpp",
+                "cs": "csharp",
+                "css": "css",
+                "dart": "dart",
+                "ebnf": "ebnf",
+                "erl": "erlang",
+                "ex": "elixir",
+                "hpp": "cpp",
+                "go": "go",
+                "groovy": "groovy",
+                "h": "c",
+                "hs": "haskell",
+                "html": "html",
+                "java": "java",
+                "js": "javascript",
+                "json": "json",
+                "kt": "kotlin",
+                "lua": "lua",
+                "m6r": "metaphor",
+                "m": "objectivec",
+                "md": "markdown",
+                "mm": "objectivec",
+                "php": "php",
+                "pl": "perl",
+                "py": "python",
+                "r": "r",
+                "rkt": "racket",
+                "rb": "ruby",
+                "rs": "rust",
+                "scala": "scala",
+                "sh": "bash",
+                "sql": "sql",
+                "swift": "swift",
+                "ts": "typescript",
+                "vb": "vbnet",
+                "vbs": "vbscript",
+                "xml": "xml",
+                "yaml": "yaml",
+                "yml": "yaml"
+            }
+        
+            def __init__(self, input_text, filename):
+                self.filename: str = filename
+                self.tokens: List[Token] = []
+                self.current_line: int = 1
+                self.input: str = input_text
+                self._tokenize()
+        
+            def get_next_token(self) -> Token:
+                """Return the next token from the token list."""
+                if self.tokens:
+                    return self.tokens.pop(0)
+        
+                return Token(TokenType.END_OF_FILE, "", "", self.filename, self.current_line, 1)
+        
+            def _get_language_from_file_extension(self, filename: str) -> str:
+                """Get a language name from a filename extension."""
+                extension: str = ""
+                if '.' in filename:
+                    extension = (filename.rsplit('.', 1)[-1]).lower()
+        
+                return self.file_exts.get(extension, "plaintext")
+        
+            def _tokenize(self) -> None:
+                """Tokenizes the input file and handles embedded content."""
+                self.tokens.append(Token(TokenType.TEXT, f"File: {self.filename}", "", self.filename, 0, 1))
+                self.tokens.append(
+                    Token(
+                        TokenType.TEXT,
+                        "```" + self._get_language_from_file_extension(self.filename),
+                        "",
+                        self.filename,
+                        0,
+                        1
+                    )
+                )
+        
+                lines = self.input.splitlines()
+                for line in lines:
+                    token = Token(TokenType.TEXT, line, line, self.filename, self.current_line, 1)
+                    self.tokens.append(token)
+                    self.current_line += 1
+        
+                self.tokens.append(Token(TokenType.TEXT, "```", "", self.filename, self.current_line, 1))
+                self.tokens.append(Token(TokenType.END_OF_FILE, "", "", self.filename, self.current_line, 1))
+        ```
+    Context: Unit tests
+        The following files are some existing unit tests
+        File: tests/test_ast_node.py
+        ```python
+        import pytest
+        from ast_node import ASTNode
+        from metaphor_token import Token, TokenType
+        
+        @pytest.fixture
+        def sample_token():
+            return Token(TokenType.TEXT, "test", "test input", "test.txt", 1, 1)
+        
+        @pytest.fixture
+        def sample_node(sample_token):
+            return ASTNode(sample_token)
+        
+        def test_ast_node_creation(sample_token):
+            """Test basic node creation"""
+            node = ASTNode(sample_token)
+            assert node.token_type == sample_token.type
+            assert node.value == sample_token.value
+            assert node.line == sample_token.line
+            assert node.column == sample_token.column
+            assert node.parent_node is None
+            assert len(node.child_nodes) == 0
+        
+        def test_ast_node_add_child(sample_node):
+            """Test adding child nodes"""
+            child_token = Token(TokenType.TEXT, "child", "child input", "test.txt", 2, 1)
+            child_node = ASTNode(child_token)
+            
+            sample_node.add_child(child_node)
+            assert len(sample_node.child_nodes) == 1
+            assert child_node.parent_node == sample_node
+            assert sample_node.child_nodes[0] == child_node
+        
+        def test_ast_node_print_tree(sample_node, capsys):
+            """Test tree printing functionality"""
+            child_token = Token(TokenType.TEXT, "child", "child input", "test.txt", 2, 1)
+            child_node = ASTNode(child_token)
+            sample_node.add_child(child_node)
+            
+            sample_node.print_tree()
+            captured = capsys.readouterr()
+            assert "test\n  child\n" in captured.out
+        
+        ```
+        File: tests/test_token.py
+        ```python
+        import dataclasses
+        import pytest
+        
+        from metaphor_token import Token, TokenType
+        
+        def test_token_creation():
+            """Test basic token creation"""
+            token = Token(TokenType.TEXT, "test", "test input", "test.txt", 1, 1)
+            assert token.type == TokenType.TEXT
+            assert token.value == "test"
+            assert token.input == "test input"
+            assert token.filename == "test.txt"
+            assert token.line == 1
+            assert token.column == 1
+        
+        def test_token_immutability():
+            """Test that tokens are immutable"""
+            token = Token(TokenType.TEXT, "test", "test input", "test.txt", 1, 1)
+            with pytest.raises(dataclasses.FrozenInstanceError):
+                token.value = "new value"
+        
+        def test_token_string_representation():
+            """Test string representation of token"""
+            token = Token(TokenType.TEXT, "test", "test input", "test.txt", 1, 1)
+            expected = "Token(type=TokenType.TEXT, value='test', line=1, column=1)"
+            assert str(token) == expected
+        
+        ```
+        File: tests/test_metaphor_lexer.py
+        ```python
+        import pytest
+        from metaphor_lexer import MetaphorLexer
+        from metaphor_token import Token, TokenType
+        
+        @pytest.fixture
+        def empty_lexer():
+            return MetaphorLexer("", "test.txt")
+        
+        @pytest.fixture
+        def basic_lexer():
+            input_text = """Role: TestRole
+            This is a test role description
+        Context: TestContext
+            This is a test context
+            Context: Nested
+                This is nested
+        Action: TestAction
+            Do something"""
+            return MetaphorLexer(input_text, "test.txt")
+        
+        def test_lexer_initialization(empty_lexer):
+            """Test basic lexer initialization"""
+            assert empty_lexer.filename == "test.txt"
+            assert empty_lexer.in_text_block is False
+            assert empty_lexer.indent_column == 1
+            assert empty_lexer.current_line == 1
+        
+        def test_empty_input_tokenization(empty_lexer):
+            """Test tokenization of empty input"""
+            token = empty_lexer.get_next_token()
+            assert token.type == TokenType.END_OF_FILE
+        
+        def test_comment_handling():
+            """Test handling of comment lines"""
+            lexer = MetaphorLexer("# This is a comment\nRole: Test", "test.txt")
+            token = lexer.get_next_token()
+            assert token.type == TokenType.ROLE
+            assert token.value == "Role:"
+        
+        def test_tab_character_handling():
+            """Test handling of tab characters"""
+            lexer = MetaphorLexer("\tRole: Test", "test.txt")
+            token = lexer.get_next_token()
+            assert token.type == TokenType.TAB
+            token = lexer.get_next_token()
+            assert token.type == TokenType.ROLE
+        
+        def test_keyword_detection(basic_lexer):
+            """Test detection of keywords"""
+            tokens = []
+            while True:
+                token = basic_lexer.get_next_token()
+                tokens.append(token)
+                if token.type == TokenType.END_OF_FILE:
+                    break
+            
+            keyword_tokens = [t for t in tokens if t.type in (TokenType.ROLE, TokenType.CONTEXT, TokenType.ACTION)]
+            assert len(keyword_tokens) == 4  # 1 Role, 2 Context (one nested), 1 Action
+            assert keyword_tokens[0].type == TokenType.ROLE
+            assert keyword_tokens[1].type == TokenType.CONTEXT
+            assert keyword_tokens[2].type == TokenType.CONTEXT  # Nested context
+            assert keyword_tokens[3].type == TokenType.ACTION
+        
+        def test_indentation_handling():
+            """Test handling of indentation"""
+            # Using raw string to be exact about spacing
+            input_text = """Role: Test
+            First block
+            Still first block
+            Back at first"""  # All at same indentation level
+            
+            lexer = MetaphorLexer(input_text, "test.txt")
+            tokens = []
+            while True:
+                token = lexer.get_next_token()
+                tokens.append(token)
+                if token.type == TokenType.END_OF_FILE:
+                    break
+        
+            indent_tokens = [t for t in tokens if t.type == TokenType.INDENT]
+            outdent_tokens = [t for t in tokens if t.type == TokenType.OUTDENT]
+        
+            # We expect one indentation level with multiple lines at that level
+            assert len(indent_tokens) == 1
+            assert indent_tokens[0].line == 2  # First indent
+            assert len(outdent_tokens) == 1    # One outdent at the end
+            
+            # Check that all text tokens maintain the same indentation
+            text_tokens = [t for t in tokens if t.type == TokenType.TEXT]
+            assert all(t.column == text_tokens[0].column for t in text_tokens)
+        
+            # Test nested Context blocks which should show multiple indent levels
+            nested_input = """Context: Outer
+            First level
+        Context: Inner
+            Second level"""
+            
+            lexer = MetaphorLexer(nested_input, "test.txt")
+            tokens = []
+            while True:
+                token = lexer.get_next_token()
+                tokens.append(token)
+                if token.type == TokenType.END_OF_FILE:
+                    break
+        
+            # For Context blocks, each new Context: creates its own indent level
+            indent_tokens = [t for t in tokens if t.type == TokenType.INDENT]
+            assert len(indent_tokens) == 2  # One for each Context block
+        
+        def test_bad_indentation():
+            """Test handling of incorrect indentation"""
+            input_text = """Role: Test
+           Bad indent"""  # 3 spaces instead of 4
+            lexer = MetaphorLexer(input_text, "test.txt")
+            tokens = []
+            while True:
+                token = lexer.get_next_token()
+                tokens.append(token)
+                if token.type == TokenType.END_OF_FILE:
+                    break
+            
+            bad_indent_tokens = [t for t in tokens if t.type == TokenType.BAD_INDENT]
+            assert len(bad_indent_tokens) == 1
+            assert bad_indent_tokens[0].column == 4
+        
+        def test_bad_outdentation():
+            """Test handling of incorrect outdentation"""
+            input_text = """Role: Test
+                Double indented
+             Bad outdent"""  # 5 spaces instead of 4 or 8
+            lexer = MetaphorLexer(input_text, "test.txt")
+            tokens = []
+            while True:
+                token = lexer.get_next_token()
+                tokens.append(token)
+                if token.type == TokenType.END_OF_FILE:
+                    break
+            
+            bad_outdent_tokens = [t for t in tokens if t.type == TokenType.BAD_OUTDENT]
+            assert len(bad_outdent_tokens) == 1
+            assert bad_outdent_tokens[0].column == 6
+        
+        def test_keyword_text_handling():
+            """Test handling of text after keywords"""
+            input_text = "Role: Test Description"
+            lexer = MetaphorLexer(input_text, "test.txt")
+            tokens = []
+            while True:
+                token = lexer.get_next_token()
+                tokens.append(token)
+                if token.type == TokenType.END_OF_FILE:
+                    break
+            
+            assert tokens[0].type == TokenType.ROLE
+            assert tokens[1].type == TokenType.KEYWORD_TEXT
+            assert tokens[1].value == "Test Description"
+        
+        def test_text_block_continuation():
+            """Test handling of continued text blocks"""
+            input_text = """Role: Test
+            First line
+            Second line
+            Third line"""
+            lexer = MetaphorLexer(input_text, "test.txt")
+            tokens = []
+            while True:
+                token = lexer.get_next_token()
+                tokens.append(token)
+                if token.type == TokenType.END_OF_FILE:
+                    break
+            
+            text_tokens = [t for t in tokens if t.type == TokenType.TEXT]
+            assert len(text_tokens) == 3
+            assert all(t.column == text_tokens[0].column for t in text_tokens)
+        
+        def test_empty_lines():
+            """Test handling of empty lines"""
+            input_text = """Role: Test
+        
+            Text after empty line"""
+            lexer = MetaphorLexer(input_text, "test.txt")
+            tokens = []
+            while True:
+                token = lexer.get_next_token()
+                tokens.append(token)
+                if token.type == TokenType.END_OF_FILE:
+                    break
+            
+            text_tokens = [t for t in tokens if t.type == TokenType.TEXT]
+            assert len(text_tokens) == 1
+            assert text_tokens[0].value == "Text after empty line"
+        
+        def test_mixed_content():
+            """Test handling of mixed content types"""
+            input_text = """Role: Test
+            Description
+        Context: First
+            Some text
+            Context: Nested
+                Nested text
+            Back to first
+        Action: Do
+            Steps to take"""
+            
+            lexer = MetaphorLexer(input_text, "test.txt")
+            tokens = []
+            while True:
+                token = lexer.get_next_token()
+                tokens.append(token)
+                if token.type == TokenType.END_OF_FILE:
+                    break
+            
+            # Verify token sequence
+            token_types = [t.type for t in tokens if t.type not in (TokenType.INDENT, TokenType.OUTDENT)]
+            assert TokenType.ROLE in token_types
+            assert TokenType.CONTEXT in token_types
+            assert TokenType.ACTION in token_types
+            assert token_types.count(TokenType.TEXT) >= 4  # At least 4 text blocks
+        ```
+        File: tests/test_metaphor_parser.py
+        ```python
+        import pytest
+        import os
+        from pathlib import Path
+        from metaphor_parser import (
+            MetaphorParser, 
+            MetaphorParserError, 
+            MetaphorParserSyntaxError,
+            MetaphorParserFileAlreadyUsedError
+        )
+        from metaphor_token import TokenType
+        
+        @pytest.fixture
+        def parser():
+            return MetaphorParser()
+        
+        @pytest.fixture
+        def temp_test_files(tmp_path):
+            """Create a set of temporary test files"""
+            d = tmp_path / "test_files"
+            d.mkdir()
+            
+            # Create main file
+            main = d / "main.m6r"
+            main.write_text("""Role: Test
+            Description
+            
+        Context: TestContext
+            Some context
+            
+        Action: TestAction
+            Do something""")
+            
+            # Create include file
+            include = d / "include.m6r"
+            include.write_text("""Context: Include
+            Included content""")
+            
+            return str(d)
+        
+        def test_basic_parsing(parser, temp_test_files):
+            """Test basic parsing of a valid file"""
+            main_file = Path(temp_test_files) / "main.m6r"
+            result = parser.parse(str(main_file), [])
+            assert len(result) == 3
+            role_node, context_node, action_node = result
+            assert role_node.token_type == TokenType.ROLE
+            assert context_node.token_type == TokenType.CONTEXT
+            assert action_node.token_type == TokenType.ACTION
+        
+        def test_file_not_found(parser):
+            """Test handling of non-existent file"""
+            with pytest.raises(MetaphorParserError) as exc_info:
+                parser.parse("nonexistent.m6r", [])
+            assert any("File not found" in str(error.message) for error in exc_info.value.errors)
+        
+        def test_duplicate_sections(parser, tmp_path):
+            """Test handling of duplicate sections"""
+            p = tmp_path / "duplicate.m6r"
+            p.write_text("""Role: Test1
+            Description
+        Role: Test2
+            Description""")
+            
+            with pytest.raises(MetaphorParserError) as exc_info:
+                parser.parse(str(p), [])
+            assert "'Role' already defined" in str(exc_info.value.errors[0].message)
+        
+        def test_invalid_structure(parser, tmp_path):
+            """Test handling of invalid document structure"""
+            p = tmp_path / "invalid.m6r"
+            p.write_text("""InvalidKeyword: Test
+            Description""")
+            
+            with pytest.raises(MetaphorParserError) as exc_info:
+                parser.parse(str(p), [])
+            assert "Unexpected token" in str(exc_info.value.errors[0].message)
+        
+        def test_include_directive(parser, tmp_path):
+            """Test handling of Include directive"""
+            # Create main file - fixed indentation
+            main_file = tmp_path / "main.m6r"
+            include_file = tmp_path / "include.m6r"
+            
+            main_file.write_text("""Role: Test
+            Description
+        Include: include.m6r""")
+            
+            include_file.write_text("""Context: Included
+            Content""")
+            
+            result = parser.parse(str(main_file), [str(tmp_path)])
+            assert result[0].token_type == TokenType.ROLE
+            assert result[1].token_type == TokenType.CONTEXT
+            # The first child node should be the keyword text "Included"
+            assert any(node.value == "Content" for node in result[1].child_nodes)
+        
+        def test_embed_directive(parser, tmp_path):
+            """Test handling of Embed directive"""
+            main_file = tmp_path / "main.m6r"
+            # Embeds need to be within a Context block
+            main_file.write_text("""Role: Test
+            Description
+        Context: Files
+            Context text
+            Embed: test.txt""")  # Embed within Context, indented
+            
+            # Create embed file
+            embed_file = tmp_path / "test.txt"
+            embed_file.write_text("This is just plain text")
+            
+            current_dir = os.getcwd()
+            os.chdir(tmp_path)
+            try:
+                result = parser.parse(str(main_file), [])
+                assert result[0].token_type == TokenType.ROLE
+                assert result[1].token_type == TokenType.CONTEXT
+                
+                # The embedded content should be part of the Context block's content
+                context = result[1]
+                embedded_text = [node for node in context.child_nodes 
+                               if node.token_type == TokenType.TEXT and 
+                               ("test.txt" in node.value or "plaintext" in node.value)]
+                assert len(embedded_text) > 0
+            finally:
+                os.chdir(current_dir)
+        
+        def test_recursive_includes(parser, tmp_path):
+            """Test handling of recursive includes"""
+            file1 = tmp_path / "file1.m6r"
+            file2 = tmp_path / "file2.m6r"
+            
+            # No indent on Include directives
+            file1.write_text("""Role: Test1
+            Description
+        Include: file2.m6r""")
+            
+            file2.write_text("""Context: Test2
+            Description
+        Include: file1.m6r""")
+            
+            with pytest.raises(MetaphorParserError) as exc_info:
+                parser.parse(str(file1), [str(tmp_path)])
+                # Check the actual error messages in the errors list
+                errors = exc_info.value.errors
+                assert any("has already been used" in error.message for error in errors)
+        
+        def test_search_paths(parser, tmp_path):
+            """Test handling of search paths for includes"""
+            include_dir = tmp_path / "includes"
+            include_dir.mkdir()
+            
+            main_file = tmp_path / "main.m6r"
+            include_file = include_dir / "included.m6r"
+            
+            main_file.write_text("""Role: Test
+            Description
+        Include: included.m6r""")
+            
+            include_file.write_text("""Context: Included
+            Content""")
+            
+            result = parser.parse(str(main_file), [str(include_dir)])
+            assert result[0].token_type == TokenType.ROLE
+            assert result[1].token_type == TokenType.CONTEXT
+        
+        def test_wildcard_embed(parser, tmp_path):
+            """Test handling of wildcard patterns in Embed directive"""
+            # Create multiple test files
+            (tmp_path / "test1.txt").write_text("Content 1")
+            (tmp_path / "test2.txt").write_text("Content 2")
+            
+            main_file = tmp_path / "main.m6r"
+            # Embed within Context block
+            main_file.write_text("""Role: Test
+            Description
+        Context: Files
+            Context text
+            Embed: test*.txt""")
+            
+            current_dir = os.getcwd()
+            os.chdir(tmp_path)
+            try:
+                result = parser.parse(str(main_file), [])
+                assert result[0].token_type == TokenType.ROLE
+                assert result[1].token_type == TokenType.CONTEXT
+                
+                # Check for content from both embedded files
+                context = result[1]
+                embedded_text = [node for node in context.child_nodes 
+                               if node.token_type == TokenType.TEXT]
+                # Should find both filenames
+                assert any("test1.txt" in node.value for node in embedded_text)
+                assert any("test2.txt" in node.value for node in embedded_text)
+                # Should find both contents
+                assert any("Content 1" in node.value for node in embedded_text)
+                assert any("Content 2" in node.value for node in embedded_text)
+            finally:
+                os.chdir(current_dir)
+        
+        def test_complete_parse(parser, temp_test_files):
+            """Test a complete parse with all node types"""
+            main_file = Path(temp_test_files) / "main.m6r"
+            result = parser.parse(str(main_file), [temp_test_files])
+            
+            # Verify we have all three main node types
+            assert result[0].token_type == TokenType.ROLE
+            assert result[1].token_type == TokenType.CONTEXT
+            assert result[2].token_type == TokenType.ACTION
+            
+            # Verify node contents
+            assert any(node.value == "Description" for node in result[0].child_nodes)
+        
+        def test_missing_indent_after_keyword(parser, tmp_path):
+            """Test handling of missing indent after keyword text"""
+            p = tmp_path / "missing_indent.m6r"
+            p.write_text("""Role: Test
+        No indent here""")
+            
+            with pytest.raises(MetaphorParserError) as exc_info:
+                parser.parse(str(p), [])
+            assert "Expected indent after keyword description" in str(exc_info.value.errors[0].message)
+        ```
+        File: tests/test_embed_lexer.py
+        ```python
+        import pytest
+        from embed_lexer import EmbedLexer
+        from metaphor_token import TokenType
+        
+        @pytest.fixture
+        def sample_input():
+            return "def hello():\n    print('Hello, World!')"
+        
+        def test_embed_lexer_creation():
+            """Test basic lexer creation"""
+            lexer = EmbedLexer("test content", "test.py")
+            assert lexer.filename == "test.py"
+            assert lexer.input == "test content"
+            assert lexer.current_line == 2
+        
+        def test_embed_lexer_language_detection():
+            """Test file extension to language mapping"""
+            lexer = EmbedLexer("", "test.py")
+            assert lexer._get_language_from_file_extension("test.py") == "python"
+            assert lexer._get_language_from_file_extension("test.js") == "javascript"
+            assert lexer._get_language_from_file_extension("test.unknown") == "plaintext"
+        
+        def test_embed_lexer_tokenization(sample_input):
+            """Test tokenization of Python code"""
+            lexer = EmbedLexer(sample_input, "test.py")
+            tokens = []
+            while True:
+                token = lexer.get_next_token()
+                tokens.append(token)
+                if token.type == TokenType.END_OF_FILE:
+                    break
+            
+            assert len(tokens) > 0
+            assert tokens[0].type == TokenType.TEXT
+            assert tokens[0].value.startswith("File:")
+            assert "```python" in tokens[1].value
+        
+        def test_embed_lexer():
+            """Test the EmbedLexer's token generation"""
+            input_text = "Test content"
+            lexer = EmbedLexer(input_text, "test.txt")
+            
+            tokens = []
+            while True:
+                token = lexer.get_next_token()
+                tokens.append(token)
+                if token.type == TokenType.END_OF_FILE:
+                    break
+            
+            # Should generate these tokens:
+            # 1. File: test.txt
+            # 2. ```plaintext
+            # 3. Test content
+            # 4. ```
+            # 5. END_OF_FILE
+            assert len(tokens) == 5
+            assert tokens[0].value == "File: test.txt"
+            assert tokens[1].value == "```plaintext"
+            assert tokens[2].value == "Test content"
+            assert tokens[3].value == "```"
+            assert tokens[4].type == TokenType.END_OF_FILE
+        ```
+        File: tests/conftest.py
+        ```python
+        import os
+        import sys
+        from pathlib import Path
+        
+        # Add the src directory to Python path
+        sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+        ```
+Action: Review code
+    The tests provide quite good unit test coverage, but are weak at checking exception paths.
+
+    tests/test_metaphor_parser:
+    - Please write tests to cover the Action and Context syntax error paths in parser.
+    - Please write tests to cover the PermissionError, IsADirectoryError and OSError exception paths in _read_file (by invoking behaviour in some public function that calls _read_file).
+    - Please write tests to cover the syntax_error paths in _parse_action, _parse_context, _parse_embed_, _parse_include, and _parse_role.
+
