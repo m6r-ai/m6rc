@@ -511,3 +511,43 @@ Text without indent""")
     with pytest.raises(MetaphorParserError) as exc_info:
         parser.parse(str(p), [])
     assert "Expected description or indent for 'Role' block" in str(exc_info.value.errors[0].message)
+
+def test_find_file_path_absolute(parser, tmp_path):
+    """Test _find_file_path with absolute path that exists"""
+    test_file = tmp_path / "test.m6r"
+    test_file.write_text("Content")
+
+    # Convert to absolute path
+    abs_path = str(test_file.absolute())
+    result = parser._find_file_path(abs_path)
+
+    assert result == abs_path
+
+def test_find_file_path_not_found(parser, tmp_path):
+    """Test _find_file_path with non-existent file"""
+    non_existent = str(tmp_path / "nonexistent.m6r")
+    search_paths = [str(tmp_path)]
+
+    with pytest.raises(FileNotFoundError) as exc_info:
+        parser._find_file_path(non_existent)
+    assert "File not found:" in str(exc_info.value)
+
+def test_parse_file_not_found_with_token(parser, tmp_path):
+    """Test parse() error handling with existing token context"""
+    # Create a main file that includes a non-existent file
+    main_file = tmp_path / "main.m6r"
+    main_file.write_text("""Role: Test
+    Description
+    Include: nonexistent.m6r""")
+
+    # This should trigger the error handling with a current_token
+    with pytest.raises(MetaphorParserError) as exc_info:
+        parser.parse(str(main_file), [])
+
+    # Verify the error has the correct token context
+    error = exc_info.value.errors[0]
+    assert "File not found" in error.message
+    assert error.filename == str(main_file)  # Should have the main file as context
+    assert error.line > 0  # Should have a valid line number
+    assert error.column > 0  # Should have a valid column number
+    assert "Include: nonexistent.m6r" in error.input_text  # Should have the failing line
