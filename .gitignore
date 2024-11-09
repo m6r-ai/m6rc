@@ -2,6 +2,9 @@
 *~
 *.swp
 
+# Ignore generated prompts
+*.lcp
+
 # Ignore python cache files
 **/__pycache__
 
