@@ -236,9 +236,6 @@ class MetaphorLexer:
             line: The current line
             start_column: The starting column of the content
         """
-        if not line:
-            return
-
         indent_offset = start_column - self.indent_column
 
         if indent_offset > 0:
