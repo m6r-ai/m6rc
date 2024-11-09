@@ -203,8 +203,6 @@ class MetaphorParser:
         """Parse an action block and construct its AST node."""
         action_node = ASTNode(token)
 
-        seen_token_type = TokenType.NONE
-
         init_token = self.get_next_token()
         if init_token.type == TokenType.KEYWORD_TEXT:
             action_node.add_child(self._parse_keyword_text(init_token))
@@ -220,9 +218,6 @@ class MetaphorParser:
         while True:
             token = self.get_next_token()
             if token.type == TokenType.TEXT:
-                if seen_token_type != TokenType.NONE:
-                    self._record_syntax_error(token, "Text must come first in an 'Action' block")
-
                 action_node.add_child(self._parse_text(token))
             elif token.type == TokenType.OUTDENT or token.type == TokenType.END_OF_FILE:
                 return action_node
