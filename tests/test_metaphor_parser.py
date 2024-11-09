@@ -54,7 +54,31 @@ def test_file_not_found(parser):
         parser.parse("nonexistent.m6r", [])
     assert any("File not found" in str(error.message) for error in exc_info.value.errors)
 
-def test_duplicate_sections(parser, tmp_path):
+def test_duplicate_action_sections(parser, tmp_path):
+    """Test handling of duplicate sections"""
+    p = tmp_path / "duplicate.m6r"
+    p.write_text("""Action: Test1
+    Description
+Action: Test2
+    Description""")
+    
+    with pytest.raises(MetaphorParserError) as exc_info:
+        parser.parse(str(p), [])
+    assert "'Action' already defined" in str(exc_info.value.errors[0].message)
+
+def test_duplicate_context_sections(parser, tmp_path):
+    """Test handling of duplicate sections"""
+    p = tmp_path / "duplicate.m6r"
+    p.write_text("""Context: Test1
+    Description
+Context: Test2
+    Description""")
+    
+    with pytest.raises(MetaphorParserError) as exc_info:
+        parser.parse(str(p), [])
+    assert "'Context' already defined" in str(exc_info.value.errors[0].message)
+
+def test_duplicate_role_sections(parser, tmp_path):
     """Test handling of duplicate sections"""
     p = tmp_path / "duplicate.m6r"
     p.write_text("""Role: Test1
