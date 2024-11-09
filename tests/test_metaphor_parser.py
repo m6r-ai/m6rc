@@ -410,3 +410,80 @@ def test_os_error(tmp_path, monkeypatch):
     with pytest.raises(MetaphorParserError) as exc_info:
         parser.parse(str(p), [])
     assert "OS error" in str(exc_info.value.errors[0].message)
+
+def test_recursive_embed(tmp_path):
+    """Test handling of recursive Embed with **/ pattern"""
+    # Create a nested directory structure
+    subdir = tmp_path / "subdir"
+    subdir.mkdir()
+    subsubdir = subdir / "deeper"
+    subsubdir.mkdir()
+    
+    # Create test files at different levels
+    (tmp_path / "root.txt").write_text("Root content")
+    (subdir / "level1.txt").write_text("Level 1 content")
+    (subsubdir / "level2.txt").write_text("Level 2 content")
+    
+    main_file = tmp_path / "main.m6r"
+    # Use **/ pattern to recursively match files, with proper 4-space indentation
+    main_file.write_text("""Role: Test
+    Description
+Context: Files
+    Context text
+    Embed: ./**/*.txt""")  # Note the ./ prefix to ensure we look in current directory
+    
+    current_dir = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        parser = MetaphorParser()
+        result = parser.parse(str(main_file), [])
+        
+        # Check for content from all embedded files
+        context = result[1]  # Context node
+        embedded_text = [node for node in context.child_nodes 
+                       if node.token_type == TokenType.TEXT]
+        
+        # Should find all filenames
+        assert any("root.txt" in node.value for node in embedded_text)
+        assert any("level1.txt" in node.value for node in embedded_text)
+        assert any("level2.txt" in node.value for node in embedded_text)
+        
+        # Should find all contents
+        assert any("Root content" in node.value for node in embedded_text)
+        assert any("Level 1 content" in node.value for node in embedded_text)
+        assert any("Level 2 content" in node.value for node in embedded_text)
+    finally:
+        os.chdir(current_dir)
+
+def test_action_missing_description_and_indent(tmp_path):
+    """Test handling of Action block with neither description nor indent"""
+    p = tmp_path / "action_invalid.m6r"
+    p.write_text("""Action:
+Text without indent""")
+    
+    parser = MetaphorParser()
+    with pytest.raises(MetaphorParserError) as exc_info:
+        parser.parse(str(p), [])
+    assert "Expected description or indent for 'Action' block" in str(exc_info.value.errors[0].message)
+
+def test_context_missing_description_and_indent(tmp_path):
+    """Test handling of Context block with neither description nor indent"""
+    p = tmp_path / "context_invalid.m6r"
+    p.write_text("""Context:
+Text without indent""")
+    
+    parser = MetaphorParser()
+    with pytest.raises(MetaphorParserError) as exc_info:
+        parser.parse(str(p), [])
+    assert "Expected description or indent for 'Context' block" in str(exc_info.value.errors[0].message)
+
+def test_role_missing_description_and_indent(tmp_path):
+    """Test handling of Role block with neither description nor indent"""
+    p = tmp_path / "role_invalid.m6r"
+    p.write_text("""Role:
+Text without indent""")
+    
+    parser = MetaphorParser()
+    with pytest.raises(MetaphorParserError) as exc_info:
+        parser.parse(str(p), [])
+    assert "Expected description or indent for 'Role' block" in str(exc_info.value.errors[0].message)

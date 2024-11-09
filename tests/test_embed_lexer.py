@@ -59,3 +59,20 @@ def test_embed_lexer():
     assert tokens[2].value == "Test content"
     assert tokens[3].value == "```"
     assert tokens[4].type == TokenType.END_OF_FILE
+
+def test_empty_lexer():
+    """Test behavior when all tokens have been consumed"""
+    lexer = EmbedLexer("", "test.txt")
+    
+    # First consume all regular tokens
+    while lexer.tokens:
+        lexer.get_next_token()
+        
+    # Now get another token when tokens list is empty
+    token = lexer.get_next_token()
+    assert token.type == TokenType.END_OF_FILE
+    assert token.value == ""
+    assert token.input == ""
+    assert token.filename == "test.txt"
+    assert token.line == 1
+    assert token.column == 1
