@@ -11,3 +11,6 @@
 # Ignore code coverage reports
 .coverage
 htmlcol
+
+# Ignore virtual environment
+m6rc_env
