@@ -17,44 +17,39 @@ import sys
 import argparse
 from pathlib import Path
 
-from metaphor_token import TokenType
-from metaphor_parser import MetaphorParser, MetaphorParserError
+from m6rclib import MetaphorASTNodeType, MetaphorParser, MetaphorParserError
 
 
 def recurse(node, depth, out):
     """
-    Recursively traverse the AST and output formatted sections.
+    Recursively traverse the MetaphorAST and output formatted sections.
 
     Args:
-        node (ASTNode): The current AST node being processed.
+        node (MetaphorASTNode): The current MetaphorAST node being processed.
         depth (integer): The current tree depth.
         out (file): The output stream to write to.
     """
     indent = " " * (depth * 4)
     keyword = ""
 
-    if node.token_type == TokenType.TEXT:
+    if node.node_type == MetaphorASTNodeType.TEXT:
         out.write(f"{indent}{node.value}\n")
         return
 
-    if node.token_type == TokenType.ACTION:
+    if node.node_type == MetaphorASTNodeType.ACTION:
         keyword = "Action:"
-    elif node.token_type == TokenType.CONTEXT:
+    elif node.node_type == MetaphorASTNodeType.CONTEXT:
         keyword = "Context:"
-    elif node.token_type == TokenType.ROLE:
+    elif node.node_type == MetaphorASTNodeType.ROLE:
         keyword = "Role:"
 
-    if node.token_type in (TokenType.ACTION, TokenType.CONTEXT, TokenType.ROLE):
-        if node.child_nodes:
-            child = node.child_nodes[0]
-            if child.token_type == TokenType.KEYWORD_TEXT:
-                out.write(f"{indent}{keyword} {child.value}\n")
-            else:
-                out.write(f"{indent}{keyword}\n")
-        else:
-            out.write(f"{indent}{keyword}\n")
+    out.write(f"{indent}{keyword}")
+    if node.value:
+        out.write(f" {node.value}")
 
-    for child in node.child_nodes:
+    out.write("\n")
+
+    for child in node.children:
         recurse(child, depth + 1, out)
 
 
@@ -93,7 +88,7 @@ def main():
 
     metaphor_parser = MetaphorParser()
     try:
-        syntax_tree = metaphor_parser.parse(input_file, search_paths)
+        syntax_tree = metaphor_parser.parse_file(input_file, search_paths)
     except MetaphorParserError as e:
         for error in e.errors:
             caret = ""
