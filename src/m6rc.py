@@ -29,25 +29,26 @@ def recurse(node, depth, out):
         depth (integer): The current tree depth.
         out (file): The output stream to write to.
     """
-    indent = " " * (depth * 4)
-    keyword = ""
+    if node.node_type != MetaphorASTNodeType.ROOT:
+        indent = " " * ((depth - 1) * 4)
+        keyword = ""
 
-    if node.node_type == MetaphorASTNodeType.TEXT:
-        out.write(f"{indent}{node.value}\n")
-        return
+        if node.node_type == MetaphorASTNodeType.TEXT:
+            out.write(f"{indent}{node.value}\n")
+            return
 
-    if node.node_type == MetaphorASTNodeType.ACTION:
-        keyword = "Action:"
-    elif node.node_type == MetaphorASTNodeType.CONTEXT:
-        keyword = "Context:"
-    elif node.node_type == MetaphorASTNodeType.ROLE:
-        keyword = "Role:"
+        if node.node_type == MetaphorASTNodeType.ACTION:
+            keyword = "Action:"
+        elif node.node_type == MetaphorASTNodeType.CONTEXT:
+            keyword = "Context:"
+        elif node.node_type == MetaphorASTNodeType.ROLE:
+            keyword = "Role:"
 
-    out.write(f"{indent}{keyword}")
-    if node.value:
-        out.write(f" {node.value}")
+        out.write(f"{indent}{keyword}")
+        if node.value:
+            out.write(f" {node.value}")
 
-    out.write("\n")
+        out.write("\n")
 
     for child in node.children:
         recurse(child, depth + 1, out)
@@ -123,9 +124,7 @@ def main():
     output_stream.write("need to fulfil all the details described in the \"Context:\".  Ensure you complete all the \n")
     output_stream.write("elements and do not include any placeholders.\n\n")
 
-    for block in syntax_tree:
-        if block is not None:
-            recurse(block, 0, output_stream)
+    recurse(syntax_tree, 0, output_stream)
 
     if output_file:
         output_stream.close()
