@@ -104,26 +104,6 @@ def main():
         print("----------------\n", file=sys.stderr)
         return -1
 
-    # Provide a default summary of Metaphor.
-    output_stream.write("The following is written in a language called Metaphor.\n\n")
-    output_stream.write("Metaphor has the structure of a document tree with branches and leaves being \n")
-    output_stream.write("prefixed by the keywords \"Role:\", \"Context:\" or \"Action:\".\n\n")
-    output_stream.write("These have an optional section name that will immediately follow them on the same line.  \n")
-    output_stream.write("If this is missing then the section name is not defined.\n\n")
-    output_stream.write("After a keyword line the text may be indented to include an optional block of descriptive \n")
-    output_stream.write("text that explains the purpose of the block.  A block may also include one or more optional \n")
-    output_stream.write("child blocks inside them and that further clarify their parent block.\n\n")
-    output_stream.write("The indentation of the blocks indicates where in the tree the pieces appear.  For example a \n")
-    output_stream.write("\"Context:\" indented by 8 spaces is a child of the context above it that is indented by 4 \n")
-    output_stream.write("spaces.  One indented 12 spaces would be a child of the block above it that is indented by \n")
-    output_stream.write("8 spaces.\n\n")
-    output_stream.write("If a \"Role:\" block exists then this is the role you should fulfil.\n")
-    output_stream.write("Please review all of the \"Context:\" blocks to understand what is required and then \n")
-    output_stream.write("process all of the items included in the \"Action:\" section.\n\n")
-    output_stream.write("When you process the actions please carefully ensure you do all of them accurately.  These \n")
-    output_stream.write("need to fulfil all the details described in the \"Context:\".  Ensure you complete all the \n")
-    output_stream.write("elements and do not include any placeholders.\n\n")
-
     recurse(syntax_tree, 0, output_stream)
 
     if output_file:
