@@ -17,41 +17,14 @@ import sys
 import argparse
 from pathlib import Path
 
-from m6rclib import MetaphorASTNodeType, MetaphorParser, MetaphorParserError
-
-
-def recurse(node, depth, out):
-    """
-    Recursively traverse the MetaphorAST and output formatted sections.
-
-    Args:
-        node (MetaphorASTNode): The current MetaphorAST node being processed.
-        depth (integer): The current tree depth.
-        out (file): The output stream to write to.
-    """
-    if node.node_type != MetaphorASTNodeType.ROOT:
-        indent = " " * ((depth - 1) * 4)
-        keyword = ""
-
-        if node.node_type == MetaphorASTNodeType.TEXT:
-            out.write(f"{indent}{node.value}\n")
-            return
-
-        if node.node_type == MetaphorASTNodeType.ACTION:
-            keyword = "Action:"
-        elif node.node_type == MetaphorASTNodeType.CONTEXT:
-            keyword = "Context:"
-        elif node.node_type == MetaphorASTNodeType.ROLE:
-            keyword = "Role:"
-
-        out.write(f"{indent}{keyword}")
-        if node.value:
-            out.write(f" {node.value}")
-
-        out.write("\n")
-
-    for child in node.children:
-        recurse(child, depth + 1, out)
+from m6rclib import (
+    MetaphorParser,
+    MetaphorParserError,
+    MetaphorASTNode,
+    MetaphorASTNodeType,
+    format_ast,
+    format_errors
+)
 
 
 def main():
@@ -87,24 +60,15 @@ def main():
             print(f"Error: Could not open output file {output_file}: {e}", file=sys.stderr)
             return 1
 
-    metaphor_parser = MetaphorParser()
     try:
+        metaphor_parser = MetaphorParser()
         syntax_tree = metaphor_parser.parse_file(input_file, search_paths)
+        output_stream.write(format_ast(syntax_tree))
+        return 0
+
     except MetaphorParserError as e:
-        for error in e.errors:
-            caret = ""
-            for _ in range(1, error.column):
-                caret += " "
-
-            error_message = f"{error.message}: line {error.line}, column {error.column}, " \
-                f"file {error.filename}\n{caret}|\n{caret}v\n{error.input_text}"
-
-            print(f"----------------\n{error_message}", file=sys.stderr)
-
-        print("----------------\n", file=sys.stderr)
-        return -1
-
-    recurse(syntax_tree, 0, output_stream)
+        print(format_errors(e.errors), file=sys.stderr)
+        return 2
 
     if output_file:
         output_stream.close()
