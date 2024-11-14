@@ -87,6 +87,14 @@ One important consideration is to capture any new context that should be used in
 `.m6r` files.  This means it's available on any subsequent iterations.  This also includes elements of any code that
 is created by the LLM where you want to preserve that in future versions.
 
+## Installing the software
+
+`m6rc` uses the m6rclib package.  To install this use:
+
+```bash
+pip install m6rclib
+```
+
 ## Command-line usage
 
 ### Basic command syntax

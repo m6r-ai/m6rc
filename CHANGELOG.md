@@ -1,5 +1,14 @@
 # Changelog for m6rc
 
+## v0.3 (2024-11-14)
+
+This release has minor changes in capabilities from v0.2, but has large changes behind the scenes!
+
+- Correctly handle embedded files so they aren't parsed for Metaphor keywords.
+- Improved preamble for all generated prompts.
+- Switched the backend to use the m6rclib package instead of having a stand-alone Metaphor parser
+  and prompt compiler.
+
 ## v0.2 (2024-11-05)
 
 This release adds the following new features:
