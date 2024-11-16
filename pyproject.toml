@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "m6rc"
+version = "0.4.1"
+authors = [
+    { name="M6R", email="hello@m6r.ai" },
+]
+description = "Command line tool for compling prompts using the Metaphor format"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "m6rclib>=0.3.0"
+]
+
+[project.scripts]
+m6rc = "m6rc.m6rc:main"
+
+[tool.hatch.build]
+include = [
+    "src/m6rc/**/*.py",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/m6rc"]
+
+[project.urls]
+Homepage = "https://github.com/m6r-ai/m6rc"
+Issues = "https://github.com/m6r-ai/m6rc/issues"

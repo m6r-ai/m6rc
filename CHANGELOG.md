@@ -1,5 +1,14 @@
 # Changelog for m6rc
 
+## v0.4.1 (2024-11-16)
+
+- Resolve problem with installer.
+
+## v0.4 (2024-11-16)
+
+- Add a `-v` command line flag.
+- Add project configuration to allow the tool to be installed easily.
+
 ## v0.3 (2024-11-14)
 
 This release has minor changes in capabilities from v0.2, but has large changes behind the scenes!

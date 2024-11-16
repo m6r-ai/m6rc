@@ -87,9 +87,17 @@ One important consideration is to capture any new context that should be used in
 `.m6r` files.  This means it's available on any subsequent iterations.  This also includes elements of any code that
 is created by the LLM where you want to preserve that in future versions.
 
-## Installing the software
+## Installing
 
-`m6rc` uses the m6rclib package.  To install this use:
+To install m6rc use:
+
+```bash
+pip install m6rc
+```
+
+## Installing the software from source
+
+m6rc uses the m6rclib package.  To install this use:
 
 ```bash
 pip install m6rclib
@@ -100,7 +108,7 @@ pip install m6rclib
 ### Basic command syntax
 
 ```bash
-python3 <path-to-m6rc.py>/m6rc [options] <file>
+m6rc [options] <file>
 ```
 
 Where `<file>` is the path to the input file containing Metaphor language code.
@@ -119,7 +127,7 @@ Where `<file>` is the path to the input file containing Metaphor language code.
 2. **Compile the File**: Use the following command to compile the input file:
 
    ```bash
-   python3 <path-to-m6rc.py>/m6rc <file>
+   /m6rc <file>
    ```
 
    Replace `<file>` with the path to your file.  If no output file is specified, the results will be printed on the console.
@@ -129,7 +137,7 @@ Where `<file>` is the path to the input file containing Metaphor language code.
    If you want the output written to a file, use the `-o` or `--outputFile` option:
 
    ```bash
-   python3 <path-to-m6rc.py>/m6rc -o output.lcp <file>
+   m6rc -o output.lcp <file>
    ```
 
 ## Using m6rc
@@ -139,7 +147,7 @@ Where `<file>` is the path to the input file containing Metaphor language code.
 To compile `example.m6r` and write the output to `result.lcp`:
 
 ```bash
-python3 <path-to-m6rc.py>/m6rc -o result.lcp example.m6r
+m6rc -o result.lcp example.m6r
 ```
 
 This will print diagnostic messages to `stderr`.
@@ -149,7 +157,7 @@ This will print diagnostic messages to `stderr`.
 To show the help message with usage instructions:
 
 ```bash
-python3 <path-to-m6rc.py>/m6rc --help
+m6rc --help
 ```
 
 ## Examples
@@ -180,6 +188,6 @@ Expected 'Action' keyword: line 10, column 5, file example.m6r
 
 ## FAQ
 
-### Why `m6r`?
+### Why m6r?
 
 m6r is short for Metaphor (m, 6 letters, r).  It's quicker and easier to type!

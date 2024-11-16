@@ -30,9 +30,25 @@ from m6rclib import (
 def main():
     """Main entry point for the program."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("input_file", help="Input file to parse")
-    parser.add_argument("-o", "--outputFile", help="Output file")
-    parser.add_argument("-I", "--include", action="append", help="Specify an include path")
+    parser.add_argument(
+        "input_file",
+        help="Input file to parse"
+    )
+    parser.add_argument(
+        "-o", "--outputFile",
+        help="Output file"
+    )
+    parser.add_argument(
+        "-I", "--include",
+        action="append",
+        help="Specify an include path"
+    )
+    parser.add_argument(
+        "-v", "--version",
+        help='Display version information',
+        action="version",
+        version='v0.4.1'
+    )
 
     args = parser.parse_args()
 

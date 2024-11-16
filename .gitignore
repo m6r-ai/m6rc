@@ -5,6 +5,9 @@
 # Ignore generated prompts
 *.lcp
 
+# Ignore build files
+dist
+
 # Ignore python cache files
 **/__pycache__
 
@@ -13,4 +16,4 @@
 htmlcol
 
 # Ignore virtual environment
-m6rc_env
+venv
