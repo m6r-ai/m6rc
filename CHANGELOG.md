@@ -1,5 +1,13 @@
 # Changelog for m6rc
 
+## v0.4.3 (2024-11-16)
+
+- Updated to latest m6rclib (v0.4.1).
+
+## v0.4.2 (2024-11-16)
+
+- Updated to latest m6rclib (v0.4.0).
+
 ## v0.4.1 (2024-11-16)
 
 - Resolve problem with installer.

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "m6rc"
-version = "0.4.2"
+version = "0.4.3"
 authors = [
     { name="M6R", email="hello@m6r.ai" },
 ]
@@ -17,7 +17,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "m6rclib>=0.4.0"
+    "m6rclib>=0.4.1"
 ]
 
 [project.scripts]
