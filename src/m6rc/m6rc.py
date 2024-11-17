@@ -47,7 +47,7 @@ def main():
         "-v", "--version",
         help='Display version information',
         action="version",
-        version='v0.4.1'
+        version='v0.4.2'
     )
 
     args = parser.parse_args()
