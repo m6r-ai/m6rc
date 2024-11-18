@@ -1,0 +1,141 @@
+Role:
+    You are a world-class python programmer with a flair for building brilliant software
+
+Context: m6rc application
+    m6rc is a command line application that parses an input file in the language Metaphor and generates a large language
+    model AI prompt.
+
+    Context: Tool invocation
+        As a developer, I would like to start my code review tool from the command line, so I can easily
+        configure the behaviour I want.
+
+        Context: Command line tool
+            The tool will be run from the command line with appropriate arguments.
+
+        Context: No config file
+            The tool does not need a configuration file.
+
+        Context: "--output" argument
+            If the user specifies a "-o" or "--output" argument then this defines the file to which the output prompt
+            should be generated.
+
+        Context: "--help" argument
+            If the user specifies a "-h" or "--help" argument then display a help message with all valid arguments,
+            any parameters they may have, and their usage.
+
+            Take care that this may be automatically handled by the command line argument parser.
+
+        Context: "--Include" argument
+            If the user specifies a "-I" or "--include" argument then use that as part of the search path that is
+            passed to the Metaphor parser.  More than one such argument may be provided, and all of them should be passed
+            to the parser.
+
+        Context: "--version" argument
+            If the user specifies a "-v" or "--version" argument then display the application version number.
+
+        Context: default arguments
+            If not specified with an argument flag, all other inputs should be assumed to be the input filename, uncless
+            the argument is a "-".  If it is "-" then the input should come from stdin.
+
+        Context: Check all arguments
+            If the tool is invoked with unknown arguments, display correct usage information.
+
+        Context: Check all argument parameters
+            The tool must check that the form of all parameters correctly matches what is expected for each
+            command line argument.
+
+            If the tool is invoked with invalid parameters, display correct usage information.
+
+        Context: Error handling
+            The application should use the following exit codes:
+            - 0: Success
+            - 1: Command line usage error
+            - 2: Data format error (e.g. invalid Metaphor syntax)
+            - 3: Cannot open input file
+            - 4: Cannot create output file
+
+            Error messages should be written to stderr and should include:
+            - A clear description of the error
+            - The filename if relevant
+            - The line number and column if relevant for syntax errors
+
+    Context: Environment variable
+        The environment variable "M6RC_INCLUDE_DIR" may contain one or more directories that will be scanned
+        for include files, similar to the `--include` command line argument, except multiple directories may be
+        specified in the environment variable.  The path handling should match the default behaviour for the operating
+        system on which the application is being run.
+
+    Context: Application logic
+        The application should take the input files and pass it the metaphor parser.
+
+        If you are passed one or more directory names via the `--include` argument or via the
+        M6RC_INCLUDE_DIR environment variable then scan each directory for `*.m6r` files.  If no directories
+        were specified then scan the current working directory for the `*.m6r` files.
+
+        Context: Metaphor (.m6r) file parsing
+            The metaphor code review files are to be processed using the m6rclib library.  The source code for the
+            library is presented here:
+
+            Embed: ../m6rclib/src/m6rclib/*.py
+
+    Context: Python implementation and dependencies
+        As an engineer working with the application, I want the application to be easy to use and understand,
+        so I can maintain and enhance it over time.
+
+        Context: Implement in Python 3
+            The application will be written in the latest version of Python 3.
+
+        Context: Indentation of code
+            Code must be indented by 4 spaces.
+
+        Context: Use docstrings
+            Use docstrings to describe all modules, classes, and functions.  This should follow PEP 257 guidelines.
+
+        Context: Use type hints
+            Use type hints for function arguments and return values.
+
+        Context: Use comments
+            Use additional comments to describe any complex logic.
+
+        Context: PEP 8 imports
+            The import list in any module should follow PEP 8 guidelines, including the ordering of imports.
+
+        Context: Avoid unnecessary elif and else statements
+            To improve readability, do not use elif or else statements if the preceding statement returns.
+
+            For example, do this:
+
+            ```
+            if condition:
+                return
+
+            next_statement()
+            ```
+            instead of this:
+            ```
+            if condition:
+                return;
+            else:
+                next_statement()
+            ```
+
+        Context: Dependencies
+            Leverage standard library tools before custom solutions, unless specifically instructed.
+
+        Context: Exception handling
+            Use specific exceptions instead of bare except.
+
+Action: Build the software
+    Please review the requirements provided in the Context section and build the software described.  Take care to
+    address all the behaviours asked for and do not omit anything.
+
+    Do not produce any other commentary other than the code.
+
+    If the software should be structured into multiple files then please provide each file separately and identify the
+    name of each one as you produce it.
+
+    An earlier version of the application is provided here.  Please use this as a template.  This version may not meet
+    all the requirements provided in the Context section, so you may need to add or remove code to meet the full set of
+    requirements specified.
+
+    Embed: src/m6rc/m6rc.py

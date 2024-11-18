@@ -12,84 +12,186 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Command-line tool to parse Metaphor files and generate AI prompts."""
+
+import argparse
 import os
 import sys
-import argparse
 from pathlib import Path
+from typing import List, Optional
 
 from m6rclib import (
     MetaphorParser,
     MetaphorParserError,
-    MetaphorASTNode,
-    MetaphorASTNodeType,
     format_ast,
     format_errors
 )
 
 
-def main():
-    """Main entry point for the program."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "input_file",
-        help="Input file to parse"
+def get_include_paths_from_env() -> List[str]:
+    """
+    Get include paths from M6RC_INCLUDE_DIR environment variable.
+
+    Returns:
+        List[str]: List of valid directory paths from the environment variable
+    """
+    include_paths: List[str] = []
+    env_paths = os.getenv('M6RC_INCLUDE_DIR', '')
+
+    if not env_paths:
+        return include_paths
+
+    # Split paths according to OS conventions
+    for path in env_paths.split(os.pathsep):
+        if not path:
+            continue
+
+        if not os.path.isdir(path):
+            print(f"Warning: Directory in M6RC_INCLUDE_DIR not found: {path}", file=sys.stderr)
+            continue
+
+        include_paths.append(path)
+
+    return include_paths
+
+
+def validate_include_paths(paths: List[str]) -> Optional[str]:
+    """
+    Validate that all provided include paths are valid directories.
+
+    Args:
+        paths: List of paths to validate
+
+    Returns:
+        Optional[str]: Error message if validation fails, None otherwise
+    """
+    if not paths:
+        return None
+
+    for path in paths:
+        if not os.path.isdir(path):
+            return f"Not a valid directory: {path}"
+
+    return None
+
+
+def process_input(input_source: str, search_paths: List[str]) -> tuple[Optional[str], int]:
+    """
+    Process input from a file or stdin and parse it using MetaphorParser.
+
+    Args:
+        input_source: Path to input file or '-' for stdin
+        search_paths: List of paths to search for included files
+
+    Returns:
+        tuple[Optional[str], int]: (Formatted output or None, exit code)
+    """
+    metaphor_parser = MetaphorParser()
+
+    try:
+        if input_source == '-':
+            input_text = sys.stdin.read()
+            syntax_tree = metaphor_parser.parse(input_text, "<stdin>", search_paths)
+        else:
+            if not Path(input_source).exists():
+                print(f"Error: File not found: {input_source}", file=sys.stderr)
+                return None, 3
+
+            try:
+                syntax_tree = metaphor_parser.parse_file(input_source, search_paths)
+            except FileNotFoundError as e:
+                print(f"Error: Cannot open input file: {e}", file=sys.stderr)
+                return None, 3
+
+        return format_ast(syntax_tree), 0
+
+    except MetaphorParserError as e:
+        print(format_errors(e.errors), file=sys.stderr)
+        return None, 2
+
+
+def write_output(content: str, output_file: Optional[str]) -> int:
+    """
+    Write content to specified output file or stdout.
+
+    Args:
+        content: Content to write
+        output_file: Optional path to output file
+
+    Returns:
+        int: Exit code (0 for success, 4 for output error)
+    """
+    if not output_file:
+        print(content)
+        return 0
+
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return 0
+
+    except OSError as e:
+        print(f"Error: Cannot create output file {output_file}: {e}", file=sys.stderr)
+        return 4
+
+
+def main() -> int:
+    """
+    Main entry point for m6rc command line tool.
+
+    Returns:
+        int: Exit code indicating success (0) or type of failure (1-4)
+    """
+    parser = argparse.ArgumentParser(
+        description="Parse Metaphor files and generate AI prompts"
     )
     parser.add_argument(
-        "-o", "--outputFile",
-        help="Output file"
+        "input_file",
+        help="Input file to parse (use '-' for stdin)"
+    )
+    parser.add_argument(
+        "-o", "--output",
+        help="Output file (defaults to stdout)"
     )
     parser.add_argument(
         "-I", "--include",
         action="append",
-        help="Specify an include path"
+        help="Add directory to include path"
     )
     parser.add_argument(
         "-v", "--version",
-        help='Display version information',
         action="version",
-        version='v0.4.3'
+        version="v0.1"
     )
 
-    args = parser.parse_args()
-
-    output_file = args.outputFile
-    input_file = args.input_file
-
-    if not Path(input_file).exists():
-        print(f"Error: File {input_file} not found", file=sys.stderr)
+    try:
+        args = parser.parse_args()
+    except argparse.ArgumentError:
         return 1
 
-    search_paths = []
+    # Collect and validate include paths
+    search_paths: List[str] = []
+
     if args.include:
-        for path in args.include:
-            if not os.path.isdir(path):
-                print(f"Error: {path}: is not a valid directory", file=sys.stderr)
-                return 1
-
-            search_paths.append(path)
-
-    output_stream = sys.stdout
-    if output_file:
-        try:
-            output_stream = open(output_file, 'w', encoding='utf-8')
-        except OSError as e:
-            print(f"Error: Could not open output file {output_file}: {e}", file=sys.stderr)
+        error = validate_include_paths(args.include)
+        if error:
+            print(f"Error: {error}", file=sys.stderr)
             return 1
+        search_paths.extend(args.include)
 
-    try:
-        metaphor_parser = MetaphorParser()
-        syntax_tree = metaphor_parser.parse_file(input_file, search_paths)
-        output_stream.write(format_ast(syntax_tree))
-        return 0
+    env_paths = get_include_paths_from_env()
+    search_paths.extend(env_paths)
 
-    except MetaphorParserError as e:
-        print(format_errors(e.errors), file=sys.stderr)
-        return 2
+    if not search_paths:
+        search_paths.append(os.getcwd())
 
-    if output_file:
-        output_stream.close()
+    # Process input file
+    output, exit_code = process_input(args.input_file, search_paths)
+    if exit_code != 0:
+        return exit_code
 
-    return 0
+    # Write output
+    return write_output(output, args.output)
 
 
 if __name__ == "__main__":

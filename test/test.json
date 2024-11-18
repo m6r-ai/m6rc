@@ -60,6 +60,10 @@
         "type": "positive"
     },
     {
+        "command": "cat test/positive-1/test.m6r | python3 src/m6rc/m6rc.py -",
+        "type": "positive"
+    },
+    {
         "command": "python3 src/m6rc/m6rc.py test/positive-1/test.m6r",
         "type": "positive"
     }
