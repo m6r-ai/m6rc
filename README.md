@@ -202,7 +202,7 @@ m6rc --help
 Most Metaphor examples can be found in external repos, but an example in this repo can be found in
 `src/testrun/testrun.m6r`.
 
-A list of examples can be found at: [m6r.ai/Metaphor](https://m6r.ai/Metaphor).
+A list of examples can be found at: [m6r.ai/metaphor](https://m6r.ai/metaphor).
 
 This file was used to generate the test runner that is used to check the m6rc compiler correctly handles
 input files.
