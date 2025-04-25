@@ -71,13 +71,18 @@ def validate_include_paths(paths: List[str]) -> Optional[str]:
     return None
 
 
-def process_input(input_source: str, search_paths: List[str]) -> tuple[Optional[str], int]:
+def process_input(
+    input_source: str,
+    search_paths: List[str],
+    arguments: List[str] = None
+) -> tuple[Optional[str], int]:
     """
     Process input from a file or stdin and parse it using MetaphorParser.
 
     Args:
         input_source: Path to input file or '-' for stdin
         search_paths: List of paths to search for included files
+        arguments: Optional list of positional arguments to pass to the parser
 
     Returns:
         tuple[Optional[str], int]: (Formatted output or None, exit code)
@@ -87,14 +92,19 @@ def process_input(input_source: str, search_paths: List[str]) -> tuple[Optional[
     try:
         if input_source == '-':
             input_text = sys.stdin.read()
-            syntax_tree = metaphor_parser.parse(input_text, "<stdin>", search_paths)
+            syntax_tree = metaphor_parser.parse(
+                input_text,
+                "<stdin>",
+                search_paths,
+                arguments=arguments
+            )
         else:
-            if not Path(input_source).exists():
-                print(f"Error: File not found: {input_source}", file=sys.stderr)
-                return None, 3
-
             try:
-                syntax_tree = metaphor_parser.parse_file(input_source, search_paths)
+                syntax_tree = metaphor_parser.parse_file(
+                    input_source,
+                    search_paths,
+                    arguments=arguments
+                )
             except FileNotFoundError as e:
                 print(f"Error: Cannot open input file: {e}", file=sys.stderr)
                 return None, 3
@@ -139,7 +149,8 @@ def main() -> int:
         int: Exit code indicating success (0) or type of failure (1-4)
     """
     parser = argparse.ArgumentParser(
-        description="Parse Metaphor files and generate AI prompts"
+        description="Parse Metaphor files and generate AI prompts",
+        epilog="Additional arguments after the known options will be passed to the Metaphor file as positional arguments"
     )
     parser.add_argument(
         "input_file",
@@ -161,7 +172,8 @@ def main() -> int:
     )
 
     try:
-        args = parser.parse_args()
+        # Parse known arguments first
+        args, metaphor_args = parser.parse_known_args()
 
     except argparse.ArgumentError:
         return 1
@@ -183,8 +195,15 @@ def main() -> int:
     if not search_paths:
         search_paths.append(os.getcwd())
 
+    # Prepare the arguments list, with input_file as the first argument (arg0)
+    all_args = [args.input_file] + metaphor_args
+
     # Process input file
-    output, exit_code = process_input(args.input_file, search_paths)
+    output, exit_code = process_input(
+        args.input_file,
+        search_paths,
+        all_args  # Provide the parsed arguments with input_file as arg0
+    )
     if exit_code != 0:
         return exit_code
 

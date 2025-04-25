@@ -69,6 +69,7 @@ class MetaphorParser:
         self.search_paths: List[str] = []
         self.embed_path: str = None
         self.current_token: Optional[Token] = None
+        self.arguments: List[str] = []
 
     def _insert_preamble_text(self, text: str) -> None:
         self.syntax_tree.attach_child(MetaphorASTNode(MetaphorASTNodeType.TEXT, text))
@@ -129,7 +130,14 @@ class MetaphorParser:
         for text in preamble:
             self._insert_preamble_text(text)
 
-    def parse(self, input_text: str, filename: str, search_paths: List[str], embed_path: Optional[str]=None) -> MetaphorASTNode:
+    def parse(
+        self,
+        input_text: str,
+        filename: str,
+        search_paths: List[str],
+        embed_path: str="",
+        arguments: List[str] | None = None
+    ) -> MetaphorASTNode:
         """
         Parse an input string and construct the AST.
 
@@ -148,6 +156,7 @@ class MetaphorParser:
         """
         self.search_paths = search_paths
         self.embed_path = embed_path if embed_path else os.getcwd()
+        self.arguments = arguments if arguments else []
 
         try:
             self.lexers.append(MetaphorLexer(input_text, filename))
@@ -184,12 +193,14 @@ class MetaphorParser:
                     return self.syntax_tree
                 else:
                     self._record_syntax_error(token, f"Unexpected token: {token.value} at top level")
+
         except FileNotFoundError as e:
             err_token = self.current_token
             self.parse_errors.append(MetaphorParserSyntaxError(
                 f"{e}", err_token.filename, err_token.line, err_token.column, err_token.input
             ))
             raise(MetaphorParserError("parser error", self.parse_errors)) from e
+
         except MetaphorParserFileAlreadyUsedError as e:
             self.parse_errors.append(MetaphorParserSyntaxError(
                 f"The file '{e.filename}' has already been used",
@@ -200,7 +211,13 @@ class MetaphorParser:
             ))
             raise(MetaphorParserError("parser error", self.parse_errors)) from e
 
-    def parse_file(self, filename: str, search_paths: List[str], embed_path: Optional[str]=None) -> MetaphorASTNode:
+    def parse_file(
+        self,
+        filename: str,
+        search_paths: List[str],
+        embed_path: str="",
+        arguments: List[str] | None = None
+    ) -> MetaphorASTNode:
         """
         Parse a file and construct the AST.
 
@@ -219,12 +236,11 @@ class MetaphorParser:
         try:
             self._check_file_not_loaded(filename)
             input_text = self._read_file(filename)
-            return self.parse(input_text, filename, search_paths, embed_path)
+            return self.parse(input_text, filename, search_paths, embed_path, arguments)
+
         except FileNotFoundError as e:
-            self.parse_errors.append(MetaphorParserSyntaxError(
-                f"{e}", "", 0, 0, ""
-            ))
-            raise(MetaphorParserError("parser error", self.parse_errors)) from e
+            raise FileNotFoundError(f"File not found: {filename}") from e
+
         except MetaphorParserError as e:
             raise(MetaphorParserError("parser error", self.parse_errors)) from e
 
@@ -407,6 +423,27 @@ class MetaphorParser:
                     f"Unexpected token: {token.value} in 'Role' block"
                 )
 
+    def _parse_argument(self, token: Token) -> str | None:
+        """
+        Parse a $ argument token.
+
+        Args:
+            token: The token to parse.
+
+        Returns:
+            The parsed argument as a string or None if we could not determine the string.
+        """
+        numeric_part = token.value[1:]
+        if not numeric_part.isdigit():
+            self._record_syntax_error(token, "After '$', the string must contain only digits")
+
+        arg_index = int(numeric_part)
+        if arg_index < 0 or arg_index >= len(self.arguments):
+            self._record_syntax_error(token, f"Argument index {arg_index} is out of range")
+            return None
+
+        return self.arguments[arg_index]
+
     def _parse_include(self):
         """Parse an Include block and load the included file."""
         token_next = self.get_next_token()
@@ -414,7 +451,14 @@ class MetaphorParser:
             self._record_syntax_error(token_next, "Expected file name for 'Include'")
             return
 
-        filename = token_next.value
+        if token_next.value[0] == "$":
+            filename = self._parse_argument(token_next)
+            if filename is None:
+                return
+
+        else:
+            filename = token_next.value
+
         self._check_file_not_loaded(filename)
         try_file = self._find_file_path(filename)
         input_text = self._read_file(try_file)
@@ -427,12 +471,16 @@ class MetaphorParser:
             self._record_syntax_error(token_next, "Expected file name or wildcard match for 'Embed'")
             return
 
-        recurse = False
-        match = token_next.value
-        if "**/" in match:
-            recurse = True
+        if token_next.value[0] == "$":
+            match = self._parse_argument(token_next)
+            if match is None:
+                return
+
+        else:
+            match = token_next.value
 
         path = os.path.join(self.embed_path, match)
+        recurse = "**/" in match
         files = glob.glob(path, recursive=recurse)
         if not files:
             self._record_syntax_error(token_next, f"{match} does not match any files for 'Embed' in {self.embed_path}")
