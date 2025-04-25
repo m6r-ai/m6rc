@@ -3,6 +3,8 @@
 ## v0.7 (2025-04-25)
 
 - Merge m6rclib back into m6rc.
+- Support passing positional arguments to the Metaphor script for use in Embed and Include
+  statements.
 
 ## v0.6 (2025-03-02)
 
