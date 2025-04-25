@@ -1,4 +1,4 @@
-# Copyright 2024 M6R Ltd.
+# Copyright 2024, 2025 M6R Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,12 +20,8 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from m6rclib import (
-    MetaphorParser,
-    MetaphorParserError,
-    format_ast,
-    format_errors
-)
+from m6rc.metaphor_parser import MetaphorParser, MetaphorParserError
+from m6rc.metaphor_formatters import format_ast, format_errors
 
 
 def get_include_paths_from_env() -> List[str]:
@@ -161,11 +157,12 @@ def main() -> int:
     parser.add_argument(
         "-v", "--version",
         action="version",
-        version="v0.1"
+        version="v0.7"
     )
 
     try:
         args = parser.parse_args()
+
     except argparse.ArgumentError:
         return 1
 
@@ -177,6 +174,7 @@ def main() -> int:
         if error:
             print(f"Error: {error}", file=sys.stderr)
             return 1
+
         search_paths.extend(args.include)
 
     env_paths = get_include_paths_from_env()

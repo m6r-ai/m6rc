@@ -95,14 +95,6 @@ To install m6rc use:
 pip install m6rc
 ```
 
-## Installing the software from source
-
-m6rc uses the m6rclib package. To install this use:
-
-```bash
-pip install m6rclib
-```
-
 ## Command-line usage
 
 ### Basic command syntax

@@ -72,12 +72,6 @@ Context: m6rc application
         M6RC_INCLUDE_DIR environment variable then scan each directory for `*.m6r` files.  If no directories
         were specified then scan the current working directory for the `*.m6r` files.
 
-        Context: Metaphor (.m6r) file parsing
-            The metaphor code review files are to be processed using the m6rclib library.  The source code for the
-            library is presented here:
-
-            Embed: ../m6rclib/src/m6rclib/*.py
-
     Context: Python implementation and dependencies
         As an engineer working with the application, I want the application to be easy to use and understand,
         so I can maintain and enhance it over time.

@@ -1,5 +1,9 @@
 # Changelog for m6rc
 
+## v0.7 (2025-04-25)
+
+- Merge m6rclib back into m6rc.
+
 ## v0.6 (2025-03-02)
 
 - Updated to latest m6rclib (v0.6.1).
